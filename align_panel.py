@@ -22,17 +22,57 @@ def get_base_figure(array: np.ndarray, name: str):
     return figure, image, toolbox
     
 
-def get_pointset(figure: BokehFigure, with_add=False):
-    pointset = figure.add_pointset(data={'cx': [],
-                                         'cy': [],
-                                         'color': [],
-                                         'ix': []}, allow_edit=True, fill_color='color')
-    if with_add:
-        point_add = figure.add_free_point(pointset=pointset)
-        figure.set_active_tool(point_add.tool_label())
+def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, initial_points=None):
+    color_iterator = itertools.cycle(get_bokeh_palette())
+    
+    defaults = {'cx': -10000,
+                'cy': -10000,
+                'moving_cx': -10000,
+                'moving_cy': -10000,
+                'color': '#000000'}
+
+    if initial_points is not None:
+        initial_points['color'] = [next(color_iterator) for _ in range(len(initial_points.index))]
+        initial_data = initial_points.reset_index().to_dict(orient='list')
+        initial_data = {k: v for k, v in initial_data.items() if k in defaults.keys()}
     else:
-        figure.set_active_tool(pointset.tool_label())
-    return pointset
+        initial_data = {k: [] for k in defaults.keys()}
+
+    static_pointset = static_figure.add_pointset(fill_values={**defaults, '_propagate': False},
+                                                 data=initial_data,
+                                                 allow_edit=True,
+                                                 fill_color='color')
+    moving_pointset = moving_figure.add_pointset(fill_values={**defaults, '_propagate': False},
+                                                 source=static_pointset.cds,
+                                                 keys=('moving_cy', 'moving_cx'),
+                                                 allow_edit=True,
+                                                 fill_color='color')
+    point_add = static_figure.add_free_point(pointset=static_pointset)
+    moving_figure.add_free_point(pointset=moving_pointset)
+    static_figure.set_active_tool(point_add.tool_label())
+    moving_figure.set_active_tool(moving_pointset.tool_label())
+
+    default_fill = -1
+
+    def _sync_points(attr, old, new):
+        if not new['cx'] or len(old['cx']) == len(new['cx']):
+            return
+        to_patch_ix = [i for i, c in enumerate(new['color']) if c in [defaults['color'], default_fill]]
+        if not to_patch_ix:
+            return
+
+        patches = {'color': [(i, next(color_iterator)) for i in to_patch_ix]}
+        cx_patches = 'cx', [(i, new['moving_cx'][i]) for i in to_patch_ix if new['cx'][i] in [defaults['cx'], default_fill]]
+        cy_patches = 'cy', [(i, new['moving_cy'][i]) for i in to_patch_ix if new['cy'][i] in [defaults['cy'], default_fill]]
+        moving_cx_patches = 'moving_cx', [(i, new['cx'][i]) for i in to_patch_ix if new['moving_cx'][i] in [defaults['moving_cx'], default_fill]]
+        moving_cy_patches = 'moving_cy', [(i, new['cy'][i]) for i in to_patch_ix if new['moving_cy'][i] in [defaults['moving_cy'], default_fill]]
+        valid_point_patches = {k: v for k, v in [cx_patches, cy_patches, moving_cx_patches, moving_cy_patches] if v}
+        patches.update(valid_point_patches)
+        static_pointset.cds.patch(patches)
+    
+    static_pointset.cds.on_change('data', _sync_points)
+
+    return static_pointset, moving_pointset
     
 
 def compute_transform(static_points, moving_points, method='affine'):
