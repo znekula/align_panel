@@ -22,6 +22,14 @@ class ImageTransformer:
         self.transforms.append(transform)
         self._reshapes.append(output_shape)
 
+    def add_null_transform(self, output_shape=None):
+        self.transforms.append(self._null_transform())
+        self._reshapes.append(output_shape)
+
+    @staticmethod
+    def _null_transform():
+        return sktransform.EuclideanTransform()
+
     def clear_transforms(self):
         self.transforms.clear()
         self._reshapes.clear()
@@ -35,12 +43,19 @@ class ImageTransformer:
     def get_combined_transform(self):
         transform_mxs = [t.params for t in self.transforms]
         if not transform_mxs:
-            transform = sktransform.EuclideanTransform().params
+            transform = self._null_transform().params
         elif len(transform_mxs) >= 2:
             transform = functools.reduce(np.matmul, transform_mxs)
         else:
             transform = transform_mxs[0]
-        return sktransform.AffineTransform(matrix=transform)
+        combined = sktransform.AffineTransform(matrix=transform)
+        # This combines existing transforms into a single step for speed
+        # If necessary code also exists to have an undo functionality
+        # by retaining a history of each transform step
+        current_shape = self.current_shape()
+        self.clear_transforms()
+        self.add_transform(combined, output_shape=current_shape)
+        return combined
 
     def get_transformed_image(self, preserve_range=True, cval=0.,**kwargs):
         if not self.transforms:
@@ -99,42 +114,3 @@ class ImageTransformer:
         self.add_transform(transform)
         backward_shift = sktransform.EuclideanTransform(translation=-1 * origin_xy)
         self.add_transform(backward_shift)
-
-
-class ImageTransformerState(ImageTransformer):
-    def __init__(self, *args, **kwargs):
-        self.meta = kwargs.pop('meta', {})
-        super().__init__(*args, **kwargs)
-        self._history = []
-        self._current_key = None
-
-    def add_transform(self, transform, output_shape=None):
-        super().add_transform(transform, output_shape=output_shape)
-        self._history.append(self._current_key)
-
-    def remove_transforms(self, key):
-        self._transforms = [t for k, t in zip(self._history, self.transforms) if k != key]
-        self._reshapes = [s for k, s in zip(self._history, self._reshapes) if k != key]
-        self._history = [k for k in self._history if k != key]
-
-    def clear_transforms(self):
-        super().clear_transforms()
-        self._history.clear()
-
-    @staticmethod
-    def get_key():
-        return str(uuid.uuid4())
-
-    def get_meta(self, key, default=None):
-        return self.meta.get(key, default)
-
-    def set_meta(self, key, value):
-        self.meta[key] = value
-
-    @contextlib.contextmanager
-    def group_transforms(self, key=None):
-        if not key:
-            key = self.get_key()
-        self._current_key = key
-        yield key
-        self._current_key = None
