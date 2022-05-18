@@ -110,55 +110,38 @@ Transformation matrix:
 ```'''
 
 
-def point_registration(static: np.ndarray, moving: np.ndarray):
+def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=None):
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
     overlay_image = static_fig.add_image(array=moving)
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
-    static_pointset = get_pointset(static_fig, with_add=True)
-    
     moving_fig, moving_im, moving_toolbox = get_base_figure(moving, 'Moving')
-    moving_pointset = get_pointset(moving_fig)
-    
-    color_iterator = itertools.cycle(get_bokeh_palette())
-    
-    def _copy_new_points(attr, old, new):
-        source_cds = static_pointset.cds
-        target_cds = moving_pointset.cds
-        target_length = len(target_cds.data['cx'])
-        source_length = len(new['cx'])
-        if target_length == source_length:
-            return
-        elif target_length > source_length:
-            raise RuntimeError('De-sync data sources ??')
-        to_add = source_length - target_length
-        new_colors = [next(color_iterator) for _ in range(to_add)]
-        max_ix = max(0, max(new['ix']))
-        new_indexes = [ix for ix in range(max_ix, max_ix + to_add)]
-        source_update = {'color': [(slice(source_length-to_add, source_length), new_colors)],
-                         'ix': [(slice(source_length-to_add, source_length), new_indexes)]}
-        source_cds.patch(source_update)
-        update_data = {k: new[k][-to_add:] for k in target_cds.column_names}
-        target_cds.stream(update_data)
-    
-    static_pointset.cds.on_change('data', _copy_new_points)    
-    
+    static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
+       
     transformations = {s.title(): s for s in available_transforms}
     method_select = pn.widgets.Select(name='Transformation type',
                                       options=[*transformations.keys()],
-                                      max_width=250)
+                                      max_width=200)
     run_button = pn.widgets.Button(name='Run',
                                    button_type='primary',
                                    max_width=150,
                                    align='end')
     output_md = pn.pane.Markdown(object='No transform defined',
-                                 width=600)
+                                 width=450)
+    clear_button = pn.widgets.Button(name='Clear points',
+                                     max_width=150,
+                                     align='end')
+    clear_button.on_click(lambda e: static_pointset.clear_data())
+
     transform = None
+    transform_points = None
     async def _compute_transform(event):
         nonlocal transform 
+        nonlocal transform_points
 
         method = transformations[method_select.value]
         static_points = static_pointset.export_data()[['cx', 'cy']].to_numpy().reshape(-1, 2)
-        moving_points = moving_pointset.export_data()[['cx', 'cy']].to_numpy().reshape(-1, 2)
+        moving_points = moving_pointset.export_data()[['moving_cx', 'moving_cy']].to_numpy().reshape(-1, 2)
+        transform_points = static_pointset.export_data()
         ns = static_points.shape[0]
         nm = moving_points.shape[0]
         if ns != nm:
@@ -173,7 +156,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray):
             output_md.object = f'Error computing transform: {str(e)}'
             return
         try:
-            output_md.object = f'{np.array2string(transform.params, precision=2)}'
+            output_md.object = array_format(transform.params)
         except AttributeError:
             output_md.object = f'Unrecognized transform'
             return
@@ -187,23 +170,21 @@ def point_registration(static: np.ndarray, moving: np.ndarray):
     run_button.on_click(_compute_transform)    
     
     layout = TwoPane()
-    layout.add_title('Point-based image registration')
-    layout.header[0].width = 600
     layout.first.append(static_fig)
     layout.first.append(pn.Row(static_toolbox, alpha_slider))
+    layout.first.append(method_select)
+    # The clear button doesn't function in a Notebook for complex reasons
+    layout.first.append(pn.Row(run_button)) # clear_button
+
     layout.second.append(moving_fig)
     layout.second.append(moving_toolbox)
-    layout.first.append(pn.Row(method_select, run_button))    
     layout.second.append(output_md)
     
     layout.finalize()
     layout.body.make_row()
     
-    
     def getter():
-        export_keys = ['cx', 'cy', 'ix']
-        return {'static_points': static_pointset.export_data()[export_keys],
-                'moving_points': moving_pointset.export_data()[export_keys],
+        return {'points': transform_points,
                 'transform': transform}
     
     return layout, getter
@@ -257,10 +238,8 @@ def fine_adjust(static, moving, initial_transform=None):
         if not x and not y:
             print('No translate requested')
             return
-        raw_adjust = translate_step_input.value
-        anchor_shift = {'xshift': -1 * x * raw_adjust, 'yshift': -1 * y * raw_adjust}
-        with transformer_moving.group_transforms(key=moving_key):
-            transformer_moving.translate(**anchor_shift)
+        raw_adjust = -1 * translate_step_input.value
+        transformer_moving.translate(xshift=x * raw_adjust, yshift=y * raw_adjust)
         await update_moving()
 
     origin_cursor = fig.add_cursor(image=static_im,
@@ -288,12 +267,11 @@ def fine_adjust(static, moving, initial_transform=None):
             return
         about_center = about_center_cbox.value
         true_rotate = -1 * rotate_step_input.value * dir
-        with transformer_moving.group_transforms(key=moving_key):
-            if about_center:
-                transformer_moving.rotate_about_center(rotation_degrees=true_rotate)
-            else:
-                cx, cy = origin_cursor.get_posxy()
-                transformer_moving.rotate_about_point((cy, cx), rotation_degrees=true_rotate)
+        if about_center:
+            transformer_moving.rotate_about_center(rotation_degrees=true_rotate)
+        else:
+            cx, cy = origin_cursor.get_posxy()
+            transformer_moving.rotate_about_point((cy, cx), rotation_degrees=true_rotate)
         await update_moving()
 
 
@@ -310,12 +288,11 @@ def fine_adjust(static, moving, initial_transform=None):
         about_center = about_center_cbox.value
         xscale = 1 - (scale_step_input.value * xdir / 100)
         yscale = 1 - (scale_step_input.value * ydir / 100)
-        with transformer_moving.group_transforms(key=moving_key):
-            if about_center:
-                transformer_moving.xy_scale_about_center(xscale=xscale, yscale=yscale)
-            else:
-                cx, cy = origin_cursor.get_posxy()
-                transformer_moving.xy_scale_about_point((cy, cx), xscale=xscale, yscale=yscale)
+        if about_center:
+            transformer_moving.xy_scale_about_center(xscale=xscale, yscale=yscale)
+        else:
+            cx, cy = origin_cursor.get_posxy()
+            transformer_moving.xy_scale_about_point((cy, cx), xscale=xscale, yscale=yscale)
         await update_moving()
 
 
@@ -325,16 +302,13 @@ def fine_adjust(static, moving, initial_transform=None):
 
         xshift = -1 * (xs[-1] - xs[0])
         yshift = -1 * (ys[-1] - ys[0])
-
-        with transformer_moving.group_transforms(key=moving_key):
-            transformer_moving.translate(xshift=xshift, yshift=yshift)
-        
+        transformer_moving.translate(xshift=xshift, yshift=yshift)
         update_moving_sync()
 
     fig.add_free_callback(callback=translate_from_path)
 
     def getter():
-        return {'transformer': transformer_moving}
+        return {'transform': transformer_moving.get_combined_transform()}
 
 
     return pn.Column(pn.Row(static_alpha, overlay_alpha),
