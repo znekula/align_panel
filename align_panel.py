@@ -11,7 +11,7 @@ from libertem_ui.layout.auto import TwoPane
 from image_transformer import ImageTransformer
 
 
-available_transforms = ['affine', 'euclidean', 'similarity', 'projective', 'piecewise-affine']
+available_transforms = ['affine', 'euclidean', 'similarity', 'projective']
 
 
 def get_base_figure(array: np.ndarray, name: str):
