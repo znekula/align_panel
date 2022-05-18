@@ -8,7 +8,7 @@ from libertem_ui.display.figure import BokehFigure
 from libertem_ui.display.colormaps import get_bokeh_palette
 from libertem_ui.layout.auto import TwoPane
 
-from image_transformer import ImageTransformerState
+from image_transformer import ImageTransformer
 
 
 available_transforms = ['affine', 'euclidean', 'similarity', 'projective', 'piecewise-affine']
@@ -153,11 +153,13 @@ def point_registration(static: np.ndarray, moving: np.ndarray):
     return layout, getter
 
 
-def fine_adjust(static, moving, initial_transform):
-    transformer_moving = ImageTransformerState(moving)
-    with transformer_moving.group_transforms():
+def fine_adjust(static, moving, initial_transform=None):
+    transformer_moving = ImageTransformer(moving)
+    if initial_transform:
         transformer_moving.add_transform(initial_transform, output_shape=static.shape)
-    moving_key = transformer_moving.get_key()
+    else:
+        # To be sure we set the output shape to match static
+        transformer_moving.add_null_transform(output_shape=static.shape)
 
     static_name = 'Static'
     moving_name = 'Moving'
