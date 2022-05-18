@@ -53,6 +53,22 @@ def compute_image(array, transform, output_shape=None, order=None):
                             preserve_range=True)
     
 
+def array_format(array):
+    assert array.shape == (3, 3)
+    str_array = np.array2string(array,
+                                precision=2,
+                                suppress_small=True,
+                                sign=' ',
+                                floatmode='fixed')
+    substrings = str_array.split('\n')
+    return f'''
+Transformation matrix:
+```
+{substrings[0]}  
+{substrings[1]}  
+{substrings[2]}
+```'''
+
 
 def point_registration(static: np.ndarray, moving: np.ndarray):
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
