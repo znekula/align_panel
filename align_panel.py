@@ -130,6 +130,14 @@ def assure_size(array: np.ndarray, target_shape: tuple[int, int]):
 
 
 def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: Optional['pd.DataFrame'] = None):
+    """
+    Provides a UI panel for pointset-to-pointset image registration
+    from the moving image onto the static image
+    Initial points can be supplied as a Pandas DataFrame
+    with the following 4 columns:
+        - `cx`, `cy` for points in the static image,
+        - `moving_cx`, `moving_cy` for corresponding points in the moving image.
+    """
     transformer_moving = ImageTransformer(moving)
 
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
