@@ -4,6 +4,14 @@ from skimage import transform as sktransform
 
 
 class ImageTransformer:
+    """
+    Provides method to compute image transformations
+    Supports chaining multiple transforms and changes to output shape
+    Provides the final transformation matrix via the
+    :code:`get_combined_transform()` method
+
+    Based entirely on `skimage.transform`
+    """
     def __init__(self, image):
         self._image = image
         self._transforms = []
