@@ -374,6 +374,15 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                      pn.Row(overlay_cmap, overlay_clims, overlay_invert)), getter
 
 
+# Unicode arrow codes used for defining UI buttons
+LEFT_ARROW = '\u25C1'
+UP_ARROW = '\u25B3'
+RIGHT_ARROW = '\u25B7'
+DOWN_ARROW = '\u25BD'
+ROTATE_RIGHT_ARROW = '\u21B7'
+ROTATE_LEFT_ARROW = '\u21B6'
+
+
 def translate_buttons(cb):
     """
     A button array for up/down/left/right
@@ -383,13 +392,13 @@ def translate_buttons(cb):
     margin = (2, 2)
     sp = pn.Spacer(width=width, height=height, margin=margin)
     kwargs = {'width': width, 'height': height, 'margin': margin, 'button_type': 'primary'}
-    left = pn.widgets.Button(name='\u25C1', **kwargs)
+    left = pn.widgets.Button(name=LEFT_ARROW, **kwargs)
     left.on_click(functools.partial(cb, x=-1))
-    up = pn.widgets.Button(name='\u25B3', **kwargs)
+    up = pn.widgets.Button(name=UP_ARROW, **kwargs)
     up.on_click(functools.partial(cb, y=-1))
-    right = pn.widgets.Button(name='\u25B7', **kwargs)
+    right = pn.widgets.Button(name=RIGHT_ARROW, **kwargs)
     right.on_click(functools.partial(cb, x=1))
-    down = pn.widgets.Button(name='\u25BD', **kwargs)
+    down = pn.widgets.Button(name=DOWN_ARROW, **kwargs)
     down.on_click(functools.partial(cb, y=1))
     lo = pn.Column(pn.Row(sp, up, sp, margin=(0, 0)),
                    pn.Row(left, sp, right, margin=(0, 0)),
@@ -403,9 +412,9 @@ def rotate_buttons(cb):
     margin = (2, 2)
     sp = pn.Spacer(width=width, height=height, margin=margin)
     kwargs = {'width': width, 'height': height, 'margin': margin, 'button_type': 'primary'}
-    acw_btn = pn.widgets.Button(name='\u21B6', **kwargs)
+    acw_btn = pn.widgets.Button(name=ROTATE_LEFT_ARROW, **kwargs)
     acw_btn.on_click(functools.partial(cb, dir=-1))
-    cw_btn = pn.widgets.Button(name='\u21B7', **kwargs)
+    cw_btn = pn.widgets.Button(name=ROTATE_RIGHT_ARROW, **kwargs)
     cw_btn.on_click(functools.partial(cb, dir=1))
     return pn.Row(sp, acw_btn, cw_btn, margin=(0, 0))
 
@@ -449,8 +458,8 @@ def scale_buttons(cb):
 def up_down_pair(name, cb, upkwargs, downkwargs, text_kwargs, button_kwargs):
     sp = pn.Spacer(**text_kwargs)
     text = pn.widgets.StaticText(value=name, **text_kwargs)
-    compress = pn.widgets.Button(name='\u25B7 \u25C1', **button_kwargs)
+    compress = pn.widgets.Button(name=f'{RIGHT_ARROW} {LEFT_ARROW}', **button_kwargs)
     compress.on_click(functools.partial(cb, **downkwargs))
-    expand = pn.widgets.Button(name='\u25C1 \u25B7', **button_kwargs)
+    expand = pn.widgets.Button(name=f'{LEFT_ARROW} {RIGHT_ARROW}', **button_kwargs)
     expand.on_click(functools.partial(cb, **upkwargs))
     return pn.Row(sp, text, compress, expand, margin=(0, 0))
