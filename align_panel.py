@@ -11,10 +11,15 @@ from libertem_ui.layout.auto import TwoPane
 from image_transformer import ImageTransformer
 
 
+# The transformation types available in the interface
 available_transforms = ['affine', 'euclidean', 'similarity', 'projective']
 
 
 def get_base_figure(array: np.ndarray, name: str):
+    """
+    Get a figure with an Image glyph of array
+    Set the title to name and return the colormap toolbox for the image
+    """
     figure = BokehFigure()
     figure.set_title(name)
     image = figure.add_image(array=array)
@@ -23,6 +28,14 @@ def get_base_figure(array: np.ndarray, name: str):
     
 
 def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, initial_points=None):
+    """
+    Place one scatter plot on each figure, and set up callbacks such that
+    points created or deleted on one or the other are mirrored in the other
+
+    This is currently a manual process, particular auto-filling values
+    such as the color for each point. The underlying library doesn't really
+    support this yet and will be upgraded to do so in the future.
+    """
     color_iterator = itertools.cycle(get_bokeh_palette())
     
     defaults = {'cx': -10000,
@@ -55,9 +68,14 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
     default_fill = -1
 
     def _sync_points(attr, old, new):
+        # The synchronization callback, will be called each time
+        # the data source is changed / modified so we first
+        # exit early if the source length hasn't changed !
         if not new['cx'] or len(old['cx']) == len(new['cx']):
             return
+        # Use the color as a proxy to recognize which points are new
         to_patch_ix = [i for i, c in enumerate(new['color']) if c in [defaults['color'], default_fill]]
+        # Exit early if no points are new, this is the case for point deletion
         if not to_patch_ix:
             return
 
@@ -93,7 +111,11 @@ def compute_image(array, transform, output_shape=None, order=None):
                             preserve_range=True)
     
 
-def array_format(array):
+def array_format(array: np.ndarray):
+    """
+    Format a 3x3 array nicely as a Markdown string
+    This is quite hacky, can be much improved
+    """
     assert array.shape == (3, 3)
     str_array = np.array2string(array,
                                 precision=2,
@@ -341,6 +363,7 @@ def fine_adjust(static, moving, initial_transform=None):
 
 def translate_buttons(cb):
     """
+    A button array for up/down/left/right
     Configured for y-axis pointing down!!
     """
     width = height = 40
@@ -362,6 +385,7 @@ def translate_buttons(cb):
 
 
 def rotate_buttons(cb):
+    """A button array for rotate acw / cw"""
     width = height = 40
     margin = (2, 2)
     sp = pn.Spacer(width=width // 3, height=height, margin=margin)
@@ -374,6 +398,7 @@ def rotate_buttons(cb):
 
 
 def scale_buttons(cb):
+    """A button array for scaling x / y / xy up and down"""
     width = height = 40
     margin = (2, 2)
     sp = pn.Spacer(width=width, height=height, margin=margin)
