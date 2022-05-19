@@ -333,6 +333,15 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
 
     fig.add_free_callback(callback=translate_from_path)
 
+    async def _undo(event):
+        transformer_moving.remove_transform()
+        await update_moving()
+
+    undo_button = pn.widgets.Button(name='Undo',
+                                    max_width=125,
+                                    button_type='primary')
+    undo_button.on_click(_undo)
+
     def getter():
         return {'transform': transformer_moving.get_combined_transform()}
 
@@ -345,6 +354,8 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                            rotate_buttons(fine_rotate),
                                            scale_step_input,
                                            scale_buttons(fine_scale),
+                                           pn.Spacer(width=40, height=40),
+                                           undo_button,
                                           )),
                      pn.Row(static_cmap, static_clims, static_invert),
                      pn.Row(overlay_cmap, overlay_clims, overlay_invert)), getter
