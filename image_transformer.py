@@ -24,8 +24,8 @@ class ImageTransformer:
     def transforms(self):
         return self._transforms
 
-    def add_transform(self, transform, output_shape=None):
-        self.transforms.append(transform)
+    def add_transform(self, *transforms, output_shape=None):
+        self.transforms.append(self._combine_transforms(*transforms))
         self._reshapes.append(output_shape)
 
     def add_null_transform(self, output_shape=None):
@@ -63,6 +63,16 @@ class ImageTransformer:
             self.clear_transforms()
             self.add_transform(combined, output_shape=current_shape)
         return combined
+
+    @staticmethod
+    def _combine_transforms(*transforms):
+        if not transforms:
+            return ImageTransformer._null_transform()
+        elif len(transforms) == 1:
+            return transforms[0]
+        else:
+            transform_mat = functools.reduce(np.matmul, [t.params for t in transforms])
+            return sktransform.AffineTransform(matrix=transform_mat)
 
     def get_transformed_image(self, preserve_range=True, order=None, cval=np.nan, **kwargs):
         if not self.transforms:
@@ -117,10 +127,8 @@ class ImageTransformer:
     def _operation_with_origin(self, origin_yx, transform):
         origin_xy = np.asarray(origin_yx).astype(float)[::-1]
         forward_shift = sktransform.EuclideanTransform(translation=origin_xy)
-        self.add_transform(forward_shift)
-        self.add_transform(transform)
         backward_shift = sktransform.EuclideanTransform(translation=-1 * origin_xy)
-        self.add_transform(backward_shift)
+        self.add_transform(forward_shift, transform, backward_shift)
 
     @staticmethod
     def available_transforms():
