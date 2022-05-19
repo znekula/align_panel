@@ -367,34 +367,56 @@ def rotate_buttons(cb):
     """A button array for rotate acw / cw"""
     width = height = 40
     margin = (2, 2)
-    sp = pn.Spacer(width=width // 3, height=height, margin=margin)
+    sp = pn.Spacer(width=width, height=height, margin=margin)
     kwargs = {'width': width, 'height': height, 'margin': margin, 'button_type': 'primary'}
     acw_btn = pn.widgets.Button(name='\u21B6', **kwargs)
     acw_btn.on_click(functools.partial(cb, dir=-1))
     cw_btn = pn.widgets.Button(name='\u21B7', **kwargs)
     cw_btn.on_click(functools.partial(cb, dir=1))
-    return pn.Row(acw_btn, sp, cw_btn, margin=(0, 0))
+    return pn.Row(sp, acw_btn, cw_btn, margin=(0, 0))
 
 
 def scale_buttons(cb):
     """A button array for scaling x / y / xy up and down"""
     width = height = 40
     margin = (2, 2)
-    sp = pn.Spacer(width=width, height=height, margin=margin)
-    kwargs = {'width': width, 'height': height, 'margin': margin, 'button_type': 'primary'}
-    x_compress = pn.widgets.Button(name='\u2B72', **kwargs)
-    x_compress.on_click(functools.partial(cb, xdir=-1))
-    y_compress = pn.widgets.Button(name='\u2B73', **kwargs)
-    y_compress.on_click(functools.partial(cb, ydir=-1))
-    x_expand = pn.widgets.Button(name='\u21D4', **kwargs)
-    x_expand.on_click(functools.partial(cb, xdir=1))
-    y_expand = pn.widgets.Button(name='\u21D5', **kwargs)
-    y_expand.on_click(functools.partial(cb, ydir=1))
-    xy_expand = pn.widgets.Button(name='\u2922', **kwargs)
-    xy_expand.on_click(functools.partial(cb, ydir=1, xdir=1))  
-    xy_compress = pn.widgets.Button(name='\u2B79', **kwargs)
-    xy_compress.on_click(functools.partial(cb, ydir=-1, xdir=-1))
-    lo = pn.Column(pn.Row(sp, y_compress, xy_expand, margin=(0, 0)),
-                   pn.Row(x_compress, sp, x_expand, margin=(0, 0)),
-                   pn.Row(xy_compress, y_expand, sp, margin=(0, 0)), margin=(0, 0))
+    text_kwargs = {'width': width // 2,
+                   'height': height // 2,
+                   'margin': margin,
+                   'align': ('end', 'center')}
+    button_kwargs = {'width': width,
+                     'height': height,
+                     'margin': margin,
+                     'button_type': 'primary'}
+    x_row = up_down_pair('X:',
+                         cb,
+                         {'xdir': 1},
+                         {'xdir': -1},
+                         text_kwargs,
+                         button_kwargs)
+    y_row = up_down_pair('Y:',
+                         cb,
+                         {'ydir': 1},
+                         {'ydir': -1},
+                         text_kwargs,
+                         button_kwargs)
+    xy_row = up_down_pair('XY:',
+                          cb,
+                          {'xdir': 1, 'ydir': 1},
+                          {'xdir': -1, 'ydir': -1},
+                          text_kwargs,
+                          button_kwargs)
+    lo = pn.Column(x_row,
+                   y_row,
+                   xy_row, margin=(0, 0))
     return lo
+
+
+def up_down_pair(name, cb, upkwargs, downkwargs, text_kwargs, button_kwargs):
+    sp = pn.Spacer(**text_kwargs)
+    text = pn.widgets.StaticText(value=name, **text_kwargs)
+    compress = pn.widgets.Button(name='\u25B7 \u25C1', **button_kwargs)
+    compress.on_click(functools.partial(cb, **downkwargs))
+    expand = pn.widgets.Button(name='\u25C1 \u25B7', **button_kwargs)
+    expand.on_click(functools.partial(cb, **upkwargs))
+    return pn.Row(sp, text, compress, expand, margin=(0, 0))
