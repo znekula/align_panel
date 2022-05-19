@@ -159,7 +159,13 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     clear_button = pn.widgets.Button(name='Clear points',
                                      max_width=150,
                                      align='end')
-    clear_button.on_click(lambda e: static_pointset.clear_data())
+    
+    async def _clear(event):
+        static_pointset.clear_data()
+        static_fig.refresh_pane()
+        moving_fig.refresh_pane()
+
+    clear_button.on_click(_clear)
 
     transform_points = None
     async def _compute_transform(event):
@@ -201,8 +207,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     layout.first.append(static_fig)
     layout.first.append(pn.Row(static_toolbox, alpha_slider))
     layout.first.append(method_select)
-    # The clear button doesn't function in a Notebook for complex reasons
-    layout.first.append(pn.Row(run_button)) # clear_button
+    layout.first.append(pn.Row(run_button, clear_button))
 
     layout.second.append(moving_fig)
     layout.second.append(moving_toolbox)
