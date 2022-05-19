@@ -110,9 +110,24 @@ Transformation matrix:
 ```'''
 
 
+def assure_size(array: np.ndarray, target_shape: tuple[int, int]):
+    """
+    Inserts array into another array of size target_shape
+    Will either crop or zero-pad as necessary
+    Array is inserted from the top-left
+    """
+    h, w = array.shape
+    th, tw = target_shape
+    ph = min(h, th)
+    pw = min(w, tw)
+    canvas = np.zeros(target_shape, dtype=array.dtype)
+    canvas[:ph, :pw] = array[:ph, :pw]
+    return canvas
+
+
 def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=None):
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
-    overlay_image = static_fig.add_image(array=moving)
+    overlay_image = static_fig.add_image(array=assure_size(moving, static.shape))
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im, moving_toolbox = get_base_figure(moving, 'Moving')
     static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
