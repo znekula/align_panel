@@ -175,8 +175,8 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
             return
         try:
             output_md.object = array_format(transform.params)
-        except AttributeError:
-            output_md.object = f'Unrecognized transform'
+        except Exception as e:
+            output_md.object = f'Post-transform error (format?)'
             return
             
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
