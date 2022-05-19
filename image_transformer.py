@@ -32,6 +32,14 @@ class ImageTransformer:
         self.transforms.append(self._null_transform())
         self._reshapes.append(output_shape)
 
+    def remove_transform(self, n=1):
+        for _ in range(n):
+            try:
+                self.transforms.pop(-1)
+                self._reshapes.pop(-1)
+            except TypeError:
+                break
+
     @staticmethod
     def _null_transform():
         return sktransform.EuclideanTransform()
@@ -46,7 +54,7 @@ class ImageTransformer:
             return reshapes[-1]
         return self._image.shape
 
-    def get_combined_transform(self, squash=True):
+    def get_combined_transform(self):
         transform_mxs = [t.params for t in self.transforms]
         if not transform_mxs:
             transform_mat = self._null_transform().params
@@ -55,13 +63,6 @@ class ImageTransformer:
         else:
             transform_mat = transform_mxs[0]
         combined = sktransform.AffineTransform(matrix=transform_mat)
-        if squash:
-            # This combines existing transforms into a single step for speed
-            # If necessary code also exists to have an undo functionality
-            # by retaining a history of each transform step
-            current_shape = self.current_shape()
-            self.clear_transforms()
-            self.add_transform(combined, output_shape=current_shape)
         return combined
 
     @staticmethod
