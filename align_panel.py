@@ -1,5 +1,6 @@
 import functools
 import itertools
+from typing import Optional, TYPE_CHECKING
 import numpy as np
 import skimage.transform as sktransform
 import panel as pn
@@ -9,6 +10,9 @@ from libertem_ui.display.colormaps import get_bokeh_palette
 from libertem_ui.layout.auto import TwoPane
 
 from image_transformer import ImageTransformer
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def get_base_figure(array: np.ndarray, name: str):
@@ -125,7 +129,7 @@ def assure_size(array: np.ndarray, target_shape: tuple[int, int]):
     return canvas
 
 
-def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=None):
+def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: Optional['pd.DataFrame'] = None):
     transformer_moving = ImageTransformer(moving)
 
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
@@ -206,7 +210,13 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
     return layout, getter
 
 
-def fine_adjust(static, moving, initial_transform=None):
+def fine_adjust(static: np.ndarray, moving: np.ndarray,
+                initial_transform: Optional[sktransform.AffineTransform] = None):
+    """
+    Provides a UI panel to manually align the image moving onto static
+    Optionally provide a skimage.transform.GeometricTransform object
+    to pre-transform moving
+    """
     transformer_moving = ImageTransformer(moving)
     if initial_transform:
         transformer_moving.add_transform(initial_transform, output_shape=static.shape)
@@ -244,7 +254,7 @@ def fine_adjust(static, moving, initial_transform=None):
                                                  width=125)
     
     def update_moving_sync():
-        moving_im.update_raw_image(transformer_moving.get_transformed_image(cval=np.nan))
+        moving_im.update_raw_image(transformer_moving.get_transformed_image())
         fig.refresh_pane()
 
     async def update_moving():
