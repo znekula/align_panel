@@ -49,12 +49,12 @@ class ImageTransformer:
     def get_combined_transform(self, squash=True):
         transform_mxs = [t.params for t in self.transforms]
         if not transform_mxs:
-            transform = self._null_transform().params
+            transform_mat = self._null_transform().params
         elif len(transform_mxs) >= 2:
-            transform = functools.reduce(np.matmul, transform_mxs)
+            transform_mat = functools.reduce(np.matmul, transform_mxs)
         else:
-            transform = transform_mxs[0]
-        combined = sktransform.AffineTransform(matrix=transform)
+            transform_mat = transform_mxs[0]
+        combined = sktransform.AffineTransform(matrix=transform_mat)
         if squash:
             # This combines existing transforms into a single step for speed
             # If necessary code also exists to have an undo functionality
