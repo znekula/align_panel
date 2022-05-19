@@ -1,5 +1,3 @@
-import uuid
-import contextlib
 import functools
 import numpy as np
 from skimage import transform as sktransform
@@ -57,14 +55,14 @@ class ImageTransformer:
         self.add_transform(combined, output_shape=current_shape)
         return combined
 
-    def get_transformed_image(self, preserve_range=True, cval=0.,**kwargs):
+    def get_transformed_image(self, preserve_range=True, order=None, cval=np.nan, **kwargs):
         if not self.transforms:
             return self._image
         combined_transform = self.get_combined_transform()
-        output_shape = self.current_shape()
         return sktransform.warp(self._image,
                                 combined_transform,
-                                output_shape=output_shape,
+                                order=order,
+                                output_shape=kwargs.pop('output_shape', self.current_shape()),
                                 preserve_range=preserve_range,
                                 cval=cval,
                                 **kwargs)
@@ -114,3 +112,20 @@ class ImageTransformer:
         self.add_transform(transform)
         backward_shift = sktransform.EuclideanTransform(translation=-1 * origin_xy)
         self.add_transform(backward_shift)
+
+    @staticmethod
+    def available_transforms():
+        """The transformation types which can be estimated, compatible with this class"""
+        return ['affine', 'euclidean', 'similarity', 'projective']
+
+    def estimate_transform(self, static_points, moving_points, method='affine', output_shape=None, clear=False):
+        assert method in self.available_transforms()
+        assert static_points.size and moving_points.size, 'Need points to match'
+        assert static_points.size == moving_points.size, 'Must supply matching pointsets'
+        transform = sktransform.estimate_transform(method,
+                                                   static_points.reshape(-1, 2),
+                                                   moving_points.reshape(-1, 2))
+        if clear:
+            self.clear_transforms()
+        self.add_transform(transform, output_shape=output_shape)
+        return transform
