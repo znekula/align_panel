@@ -11,10 +11,6 @@ from libertem_ui.layout.auto import TwoPane
 from image_transformer import ImageTransformer
 
 
-# The transformation types available in the interface
-available_transforms = ['affine', 'euclidean', 'similarity', 'projective']
-
-
 def get_base_figure(array: np.ndarray, name: str):
     """
     Get a figure with an Image glyph of array
@@ -93,24 +89,6 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
     return static_pointset, moving_pointset
     
 
-def compute_transform(static_points, moving_points, method='affine'):
-    assert method in available_transforms
-    return sktransform.estimate_transform(method,
-                                          static_points.reshape(-1, 2),
-                                          moving_points.reshape(-1, 2))
-
-
-def compute_image(array, transform, output_shape=None, order=None):
-    return sktransform.warp(array,
-                            transform,
-                            output_shape=output_shape,
-                            mode='constant',
-                            order=order,
-                            cval=np.nan,
-                            clip=True,
-                            preserve_range=True)
-    
-
 def array_format(array: np.ndarray):
     """
     Format a 3x3 array nicely as a Markdown string
@@ -148,13 +126,15 @@ def assure_size(array: np.ndarray, target_shape: tuple[int, int]):
 
 
 def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=None):
+    transformer_moving = ImageTransformer(moving)
+
     static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
     overlay_image = static_fig.add_image(array=assure_size(moving, static.shape))
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im, moving_toolbox = get_base_figure(moving, 'Moving')
     static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
        
-    transformations = {s.title(): s for s in available_transforms}
+    transformations = {s.title(): s for s in ImageTransformer.available_transforms()}
     method_select = pn.widgets.Select(name='Transformation type',
                                       options=[*transformations.keys()],
                                       max_width=200)
@@ -169,10 +149,8 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
                                      align='end')
     clear_button.on_click(lambda e: static_pointset.clear_data())
 
-    transform = None
     transform_points = None
     async def _compute_transform(event):
-        nonlocal transform 
         nonlocal transform_points
 
         method = transformations[method_select.value]
@@ -188,7 +166,10 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
             output_md.object = f'No points defined'
             return
         try:
-            transform = compute_transform(static_points, moving_points, method=method)
+            transform = transformer_moving.estimate_transform(static_points,
+                                                              moving_points,
+                                                              method=method,
+                                                              clear=True)
         except Exception as e:
             output_md.object = f'Error computing transform: {str(e)}'
             return
@@ -198,9 +179,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
             output_md.object = f'Unrecognized transform'
             return
             
-        warped_moving = compute_image(moving,
-                                      transform,
-                                      output_shape=static.shape)
+        warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
         overlay_image.update_raw_image(warped_moving)
         static_fig.refresh_pane()
     
@@ -222,7 +201,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points=No
     
     def getter():
         return {'points': transform_points,
-                'transform': transform}
+                'transform': transformer_moving.get_combined_transform()}
     
     return layout, getter
 
