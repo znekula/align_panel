@@ -2,7 +2,6 @@ import functools
 import itertools
 from typing import Optional, TYPE_CHECKING
 import numpy as np
-import skimage.transform as sktransform
 import panel as pn
 
 from libertem_ui.display.figure import BokehFigure
@@ -13,6 +12,7 @@ from image_transformer import ImageTransformer
 
 if TYPE_CHECKING:
     import pandas as pd
+    import skimage.transform as sktransform
 
 
 def get_base_figure(array: np.ndarray, name: str):
@@ -223,7 +223,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
 
 def fine_adjust(static: np.ndarray, moving: np.ndarray,
-                initial_transform: Optional[sktransform.AffineTransform] = None):
+                initial_transform: Optional['sktransform.AffineTransform'] = None):
     """
     Provides a UI panel to manually align the image moving onto static
     Optionally provide a skimage.transform.GeometricTransform object
