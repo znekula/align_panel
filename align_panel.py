@@ -6,8 +6,8 @@ import skimage.transform as sktransform
 import panel as pn
 
 from libertem_ui.display.figure import BokehFigure
-from libertem_ui.display.colormaps import get_bokeh_palette
-from libertem_ui.layout.auto import TwoPane
+from libertem_ui.display.utils.colormaps import get_bokeh_palette
+from libertem_ui.layout.panes import SimpleTwoPane as TwoPane
 
 from image_transformer import ImageTransformer
 
@@ -214,7 +214,6 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     layout.second.append(output_md)
     
     layout.finalize()
-    layout.body.make_row()
     
     def getter():
         return {'points': transform_points,
