@@ -294,7 +294,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     about_center_cbox.param.watch(_set_cursor_alpha, 'value')
 
     rotate_step_input = pn.widgets.FloatInput(name='Rotate step (deg):',
-                                              value=1.,
+                                              value=5.,
                                               start=0.1,
                                               end=100.,
                                               width=125)
