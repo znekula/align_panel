@@ -138,3 +138,4 @@ dask-worker-space/
 prototypes/
 autocorr_udf/
 .vscode/
+*.dm3
