@@ -162,8 +162,8 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     
     async def _clear(event):
         static_pointset.clear_data()
-        static_fig.refresh_pane()
-        moving_fig.refresh_pane()
+        # static_fig.refresh_pane()
+        # moving_fig.refresh_pane()
 
     clear_button.on_click(_clear)
 
@@ -198,7 +198,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
             return
             
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
-        overlay_image.update_raw_image(warped_moving)
+        overlay_image.update_raw_image(warped_moving, fix_clims=True)#change
         static_fig.refresh_pane()
     
     run_button.on_click(_compute_transform)    
@@ -241,20 +241,24 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
 
     fig = BokehFigure()
     static_im = fig.add_image(array=static)
-    moving_im = fig.add_image(array=transformer_moving.get_transformed_image(cval=np.nan))
+    #moving_im = fig.add_image(array=transformer_moving.get_transformed_image(cval=np.nan))
+    #this is my change
+    diff = static - transformer_moving.get_transformed_image(cval=np.nan)
+    moving_im = fig.add_image(array=diff)
+
     static_im.change_cmap('Blues')
     static_im.set_nan_transparent()
-    moving_im.set_color_mapper(palette='Reds')
+    moving_im.set_color_mapper(palette='Spectra')
     moving_im.set_nan_transparent()
     static_im.add_colorbar(title=static_name)
     moving_im.add_colorbar(title=moving_name)
 
-    static_alpha = static_im.get_alpha_slider(name=f'{static_name} alpha', alpha=0.5)
+    static_alpha = static_im.get_alpha_slider(name=f'{static_name} alpha', alpha=0.0)
     static_cmap = static_im.get_cbar_select(title=f'{static_name} colormap')
     static_clims = static_im.get_cbar_slider(title=f'{static_name} contrast')
     static_invert = static_im.get_invert_cmap_box(name='Invert')
 
-    overlay_alpha = moving_im.get_alpha_slider(name=f'{moving_name} alpha', alpha=0.5)        
+    overlay_alpha = moving_im.get_alpha_slider(name=f'{moving_name} alpha', alpha=1)        
     overlay_cmap = moving_im.get_cbar_select(title=f'{moving_name} colormap')
     overlay_clims = moving_im.get_cbar_slider(title=f'{moving_name} contrast')
     overlay_invert = moving_im.get_invert_cmap_box(name='Invert')
@@ -266,7 +270,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                                  width=125)
     
     def update_moving_sync():
-        moving_im.update_raw_image(transformer_moving.get_transformed_image())
+        moving_im.update_raw_image(static - transformer_moving.get_transformed_image(), fix_clims=True)
         fig.refresh_pane()
 
     async def update_moving():
