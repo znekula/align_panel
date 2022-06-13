@@ -1,18 +1,12 @@
+"""this script show basic operations done during image alignment from the raw data to aligned phase images"""
+
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
+from align_panel import point_registration, fine_adjust
 
-import numpy as np
-import panel as pn
-from bokeh.plotting import figure, show
-pn.config.inline = True
-# confing.inline tells panel to load the necessary javascript files locally and not from the internet
-# This is necessary when runing on the GRE649 server as it has an incomplete internet connection
-pn.extension()
-from libertem_ui.utils.notebook_tools import notebook_fullwidth, stop_nb
-from align_panel import point_registration, fine_adjust, array_format
-notebook_fullwidth()
 
 ######################################################################################################
+# load new raw data, make phase, and save them in to h5 file
 if False:
     from phase import Imgset_new
     """define data paths"""
