@@ -139,3 +139,6 @@ prototypes/
 autocorr_udf/
 .vscode/
 *.dm3
+
+# folders
+testingplace
