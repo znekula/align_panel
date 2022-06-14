@@ -4,11 +4,14 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 import panel as pn
 
-from libertem_ui.display.figure import BokehFigure
-from libertem_ui.display.utils.colormaps import get_bokeh_palette
-from libertem_ui.layout.panes import SimpleTwoPane as TwoPane
+from aperture.display.figure import BokehFigure
+from aperture.display.utils.colormaps import get_bokeh_palette
+from aperture.layout.panes import SimpleTwoPane as TwoPane
+from aperture.layout.panes import Panes
 
 from image_transformer import ImageTransformer
+
+from bokeh.plotting import figure
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -159,6 +162,10 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     clear_button = pn.widgets.Button(name='Clear points',
                                      max_width=150,
                                      align='end')
+
+    dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
+    zero_fig, zero_im, zero_toolbox = get_base_figure(static*0, 'Difference')
+    overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
     
     async def _clear(event):
         static_pointset.clear_data()
@@ -200,18 +207,23 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
         overlay_image.update_raw_image(warped_moving, fix_clims=True)#change
         static_fig.refresh_pane()
-    
-    run_button.on_click(_compute_transform)    
-    
-    layout = TwoPane()
-    layout.first.append(static_fig)
-    layout.first.append(pn.Row(static_toolbox, alpha_slider))
-    layout.first.append(method_select)
-    layout.first.append(pn.Row(run_button, clear_button))
 
-    layout.second.append(moving_fig)
-    layout.second.append(moving_toolbox)
-    layout.second.append(output_md)
+        overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)#change
+        zero_fig.refresh_pane()
+
+    run_button.on_click(_compute_transform)    
+
+    layout = Panes()
+    layout.panes[0].append(static_fig)
+    layout.panes[0].append(pn.Row(static_toolbox, alpha_slider))
+    layout.panes[0].append(method_select)
+    layout.panes[0].append(pn.Row(run_button, clear_button))
+
+    layout.panes[1].append(moving_fig)
+    layout.panes[1].append(moving_toolbox)
+    layout.panes[1].append(output_md)
+
+    layout.panes[2].append(zero_fig)
     
     layout.finalize()
     
@@ -237,7 +249,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
         transformer_moving.add_null_transform(output_shape=static.shape)
 
     static_name = 'Static'
-    moving_name = 'Moving'
+    moving_name = 'Difference'
 
     fig = BokehFigure()
     static_im = fig.add_image(array=static)
