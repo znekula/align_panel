@@ -6,8 +6,7 @@ import panel as pn
 
 from aperture.display.figure import BokehFigure
 from aperture.display.utils.colormaps import get_bokeh_palette
-from aperture.layouts.panes import SimpleTwoPane as TwoPane
-from aperture.layouts.panes import Panes
+from aperture.layouts.panes import SimplePanes
 
 from image_transformer import ImageTransformer
 
@@ -16,6 +15,9 @@ from bokeh.plotting import figure
 if TYPE_CHECKING:
     import pandas as pd
     import skimage.transform as sktransform
+
+
+IMG_WIDTH = 500
 
 
 def get_base_figure(array: np.ndarray, name: str):
@@ -143,9 +145,11 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     transformer_moving = ImageTransformer(moving)
 
     static_fig, static_im = get_base_figure(static, 'Static')
+    static_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     overlay_image = static_fig.add_image(array=assure_size(moving, static.shape))
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im = get_base_figure(moving, 'Moving')
+    moving_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
        
     transformations = {s.title(): s for s in ImageTransformer.available_transforms()}
@@ -164,6 +168,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
     zero_fig, zero_im = get_base_figure(static*0, 'Difference')
+    zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
     
     async def _clear(event):
@@ -216,7 +221,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     run_button.on_click(_compute_transform)    
 
-    layout = Panes()
+    layout = SimplePanes()
     layout.panes[0].append(static_fig)
     layout.panes[0].append(pn.Row(static_toolbox))
     layout.panes[0].append(pn.Row(method_select, alpha_slider))
@@ -261,6 +266,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     #this is my change
     diff = static - transformer_moving.get_transformed_image(cval=np.nan)
     moving_im = fig.add_image(array=diff)
+    fig.scale_to_frame_size(frame_width=IMG_WIDTH)
 
     static_im.change_cmap('Blues')
     static_im.set_nan_transparent()
