@@ -44,7 +44,7 @@ class ImageTransformer:
             try:
                 self.transforms.pop(-1)
                 self._reshapes.pop(-1)
-            except TypeError:
+            except (IndexError, TypeError):
                 break
 
     @staticmethod
