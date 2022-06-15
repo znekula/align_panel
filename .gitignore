@@ -139,8 +139,8 @@ prototypes/
 autocorr_udf/
 .vscode/
 *.dm3
+*.h5
 test_data/
 
 # folders
 testingplace.py
-
