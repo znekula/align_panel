@@ -6,8 +6,8 @@ import panel as pn
 
 from aperture.display.figure import BokehFigure
 from aperture.display.utils.colormaps import get_bokeh_palette
-from aperture.layout.panes import SimpleTwoPane as TwoPane
-from aperture.layout.panes import Panes
+from aperture.layouts.panes import SimpleTwoPane as TwoPane
+from aperture.layouts.panes import Panes
 
 from image_transformer import ImageTransformer
 
@@ -26,8 +26,7 @@ def get_base_figure(array: np.ndarray, name: str):
     figure = BokehFigure()
     figure.set_title(name)
     image = figure.add_image(array=array)
-    toolbox = image.get_image_toolbox(name=f'{name} toolbox')
-    return figure, image, toolbox
+    return figure, image
     
 
 def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, initial_points=None):
@@ -143,10 +142,10 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     """
     transformer_moving = ImageTransformer(moving)
 
-    static_fig, static_im, static_toolbox = get_base_figure(static, 'Static')
+    static_fig, static_im = get_base_figure(static, 'Static')
     overlay_image = static_fig.add_image(array=assure_size(moving, static.shape))
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
-    moving_fig, moving_im, moving_toolbox = get_base_figure(moving, 'Moving')
+    moving_fig, moving_im = get_base_figure(moving, 'Moving')
     static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
        
     transformations = {s.title(): s for s in ImageTransformer.available_transforms()}
@@ -164,7 +163,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
                                      align='end')
 
     dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
-    zero_fig, zero_im, zero_toolbox = get_base_figure(static*0, 'Difference')
+    zero_fig, zero_im = get_base_figure(static*0, 'Difference')
     overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
     
     async def _clear(event):
@@ -211,12 +210,16 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
         overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)#change
         zero_fig.refresh_pane()
 
+    static_toolbox = static_fig.get_toolbox(name=f'Static toolbox')
+    moving_toolbox = moving_fig.get_toolbox(name=f'Moving toolbox')
+    zero_toolbox = zero_fig.get_toolbox(name=f'Zero toolbox')
+
     run_button.on_click(_compute_transform)    
 
     layout = Panes()
     layout.panes[0].append(static_fig)
-    layout.panes[0].append(pn.Row(static_toolbox, alpha_slider))
-    layout.panes[0].append(method_select)
+    layout.panes[0].append(pn.Row(static_toolbox))
+    layout.panes[0].append(pn.Row(method_select, alpha_slider))
     layout.panes[0].append(pn.Row(run_button, clear_button))
 
     layout.panes[1].append(moving_fig)
@@ -224,6 +227,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     layout.panes[1].append(output_md)
 
     layout.panes[2].append(zero_fig)
+    layout.panes[2].append(zero_toolbox)
     
     layout.finalize()
     
@@ -260,7 +264,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
 
     static_im.change_cmap('Blues')
     static_im.set_nan_transparent()
-    moving_im.set_color_mapper(palette='Spectra')
+    moving_im.set_color_mapper(palette='Spectrum')
     moving_im.set_nan_transparent()
     static_im.add_colorbar(title=static_name)
     moving_im.add_colorbar(title=moving_name)
