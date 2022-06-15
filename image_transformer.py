@@ -74,6 +74,9 @@ class ImageTransformer:
 
     @staticmethod
     def _combine_transforms(*transforms):
+        transforms = [sktransform.AffineTransform(matrix=t)
+                      if isinstance(t, np.ndarray)
+                      else t for t in transforms]
         if not transforms:
             return ImageTransformer._null_transform()
         elif len(transforms) == 1:
