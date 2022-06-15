@@ -16,6 +16,7 @@ class ImageTransformer:
         self._image = image
         self._transforms = []
         self._reshapes = []
+        self._frozen_len = -1
 
     def set_image(self, image):
         self._image = image
@@ -24,16 +25,22 @@ class ImageTransformer:
     def transforms(self):
         return self._transforms
 
-    def add_transform(self, *transforms, output_shape=None):
+    def add_transform(self, *transforms, output_shape=None, frozen=False):
         self.transforms.append(self._combine_transforms(*transforms))
         self._reshapes.append(output_shape)
+        if frozen:
+            self._frozen_len = len(self.transforms)
 
-    def add_null_transform(self, output_shape=None):
+    def add_null_transform(self, output_shape=None, frozen=False):
         self.transforms.append(self._null_transform())
         self._reshapes.append(output_shape)
+        if frozen:
+            self._frozen_len = len(self.transforms)        
 
     def remove_transform(self, n=1):
         for _ in range(n):
+            if len(self.transforms) <= self._frozen_len:
+                break
             try:
                 self.transforms.pop(-1)
                 self._reshapes.pop(-1)
