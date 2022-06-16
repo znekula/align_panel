@@ -9,7 +9,6 @@ import panel as pn
 import aperture as ap
 from aperture.layouts.step import Step
 from aperture.layouts.template_specs import ap_spec
-from aperture.layouts.workflow import TemplateWorkflow
 from aperture.utils import loading_context
 
 from phase import Imgset_new
@@ -325,27 +324,19 @@ Results have been saved to {self.get_shared('hdf5_path')}
         return pn.Column(md)
 
 
-def get_workflow(filepaths=None, hdf5_path=None, panel_spec=ap_spec):
-    ps = {}
-    if isinstance(panel_spec, dict):
-        ps = panel_spec
-    elif callable(panel_spec):
-        ps = panel_spec()
-
-    workflow = TemplateWorkflow(title='Holo-Alignment',
-                                panel_spec=ps,
-                                shared={'hdf5_path': hdf5_path,
-                                        'filepaths': filepaths})
+def build_workflow(workflow, args=None):
+    workflow.set_title('Holo-Alignment')
     workflow.add_step(LoadStep())
     workflow.add_step(AutoAlignStep())
     workflow.add_step(PointsAlignStep())
     workflow.add_step(FineAlignStep())
     workflow.add_step(FinalPage())
-    workflow.initialize()
     return workflow
 
 
 if __name__ == '__main__':
+    from aperture.layouts.workflow import TemplateWorkflow
+
     filepaths = {
         'static': {'sample': 'test_data/-4-H.dm3',
                    'reference': 'test_data/-4-R2.dm3'},
@@ -353,7 +344,10 @@ if __name__ == '__main__':
                    'reference': 'test_data/+4-R2.dm3'},
     }
     hdf5_path = './test_data/testpath.h5'
-
-    get_workflow(filepaths=filepaths, hdf5_path=hdf5_path).show()
+    workflow = TemplateWorkflow(shared={
+                                    'filepaths': filepaths,
+                                    'hdf5_path': hdf5_path
+                                })
+    build_workflow(workflow).show()
 
 
