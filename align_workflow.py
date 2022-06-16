@@ -176,9 +176,9 @@ class LoadStep(Step):
 
     def after(self, pane):
         try:
-            pathlib.Path(self.get_shared('hdf5_path')).is_file()
-        except (KeyError, OSError, AttributeError):
-            self.return_error('No valid hdf5 file found, cannot continue')
+            assert pathlib.Path(self.get_shared('hdf5_path')).is_file()
+        except (AssertionError, KeyError, OSError, AttributeError, TypeError):
+            return self.return_error('No valid hdf5 file found, cannot continue')
         super().after(pane)
 
 
