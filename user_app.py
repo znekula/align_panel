@@ -38,16 +38,17 @@ if False:
 from imgsetlib import Imgset
 imgset1 = Imgset("test_data/mytestfile5.h5",1)
 
-imgset1.autoalign(1000,del_back=False, img_stat = imgset1.amplitude_stat, img_move = imgset1.amplitude)
-print(">>> This is the tmat from autoalignment:"); print(imgset1.tmat)
+if False:
+    imgset1.autoalign(1000,del_back=False, img_stat = imgset1.amplitude_stat, img_move = imgset1.amplitude)
+    print(">>> This is the tmat from autoalignment:"); print(imgset1.tmat)
 
 
 img_stat_manual = imgset1.unwrapped_phase_stat
 img_move_manual = imgset1.unwrapped_phase
 
-if False:
-    imgset1.manual_point(img_stat_manual, img_move_manual)
 if True:
+    imgset1.manual_point(img_stat_manual, img_move_manual)
+if False:
     imgset1.manual_fine(img_stat_manual, img_move_manual, imgset1.tmat)
 
 print("done all, this is the end")

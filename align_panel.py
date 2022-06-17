@@ -221,11 +221,14 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     run_button.on_click(_compute_transform)    
 
+    save_checkbox = pn.widgets.Checkbox(name='Save matrix')
+
     layout = SimplePanes()
     layout.panes[0].append(static_fig)
     layout.panes[0].append(pn.Row(static_toolbox))
     layout.panes[0].append(pn.Row(method_select, alpha_slider))
     layout.panes[0].append(pn.Row(run_button, clear_button))
+    layout.panes[0].add_element('save_checkbox',save_checkbox)
 
     layout.panes[1].append(moving_fig)
     layout.panes[1].append(moving_toolbox)
@@ -238,7 +241,8 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     
     def getter():
         return {'points': transform_points,
-                'transform': transformer_moving.get_combined_transform()}
+                'transform': transformer_moving.get_combined_transform(),
+                'save': layout.panes[0]['save_checkbox'].value}
     
     return layout, getter
 
@@ -379,11 +383,15 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                     max_width=125,
                                     button_type='primary')
     undo_button.on_click(_undo)
+    save_checkbox = pn.widgets.Checkbox(name='Save matrix')
 
     def getter():
-        return {'transform': transformer_moving.get_combined_transform()}
+        return {
+            'transform': transformer_moving.get_combined_transform(),
+            'save': save_checkbox.value
+            }
 
-
+    
     return pn.Column(pn.Row(static_alpha, overlay_alpha),
                      pn.Row(fig, pn.Column(translate_step_input,
                                            translate_buttons(fine_translate),
@@ -396,7 +404,8 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                            undo_button,
                                           )),
                      pn.Row(static_cmap, static_clims, static_invert),
-                     pn.Row(overlay_cmap, overlay_clims, overlay_invert)), getter
+                     pn.Row(overlay_cmap, overlay_clims, overlay_invert),
+                     pn.Row(save_checkbox)), getter
 
 
 # Unicode arrow codes used for defining UI buttons

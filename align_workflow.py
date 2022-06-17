@@ -185,7 +185,8 @@ class HDF5Step(Step):
     @staticmethod
     def img_choices():
         return {'Amplitude': lambda x: (x.amplitude_stat, x.amplitude),
-                'Phase': lambda x: (x.phase_stat, x.phase)}
+                'Phase': lambda x: (x.phase_stat, x.phase),
+                'Phase_Unwrapped': lambda x: (x.unwrapped_phase_stat, x.unwrapped_phase)}
 
     def load_hdf5(self):
         hdf5_path = self.get_shared('hdf5_path')
@@ -258,12 +259,15 @@ class PointsAlignStep(HDF5Step):
 """)
         layout, getter = point_registration(self.results['static'].data, self.results['moving'].data)
         self.results.set(data=lambda **x: getter())
+        self.tmat_point = getter().get('transform', None).params
         return pn.Column(md, layout.finalize())
 
     def after(self, pane):
         self.results.freeze()
-        imgset = self.load_hdf5()
-        imgset.savedata(['tmat'],[self.results.data['transform'].params])
+        save = self.results.data['save']
+        if save:
+            imgset = self.load_hdf5()
+            imgset.savedata(['tmat'],[self.tmat_point])
         super().after(pane)
 
     @staticmethod
@@ -297,10 +301,17 @@ class FineAlignStep(HDF5Step):
                                      initial_transform=self.get_result('points_transform'))
         self.results.set(data=lambda **x: getter())
         layout.insert(0, md)
+        self.tmat_fine = getter().get('transform', None).params
         return layout
 
     def after(self, pane):
         self.results.freeze()
+        save = self.results.data['save']
+        if save:
+            imgset = self.load_hdf5()
+            imgset.savedata(['tmat'],[self.tmat_fine])
+
+
         imgset = self.load_hdf5()
         imgset.savedata(['tmat'],[self.results.data['transform'].params])
         super().after(pane)

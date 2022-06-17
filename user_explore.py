@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from skimage import transform as sktransform
 
 """try to display some results:"""
-imgset1 = Imgset("test_data/mytestfile5.h5",1)
+imgset1 = Imgset("test_data/testpath.h5",1)
 print("Those are all atributes in the imageset:")
 print(imgset1.__dict__.keys())
 

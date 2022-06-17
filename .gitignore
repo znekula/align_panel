@@ -141,6 +141,6 @@ autocorr_udf/
 *.dm3
 *.h5
 test_data/
-
+test*
 # folders
 testingplace.py
