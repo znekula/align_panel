@@ -1,8 +1,10 @@
-"""this script show basic operations done during image alignment from the raw data to aligned phase images"""
-
+# this script show basic operations done during image alignment 
+# from the raw data to aligned phase images
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
-from align_panel import point_registration, fine_adjust
+from imgsetlib import Imgset
+#from align_panel import point_registration, fine_adjust
+
 
 
 ######################################################################################################

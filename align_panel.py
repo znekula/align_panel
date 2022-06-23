@@ -21,10 +21,20 @@ IMG_WIDTH = 500
 
 
 def get_base_figure(array: np.ndarray, name: str):
-    """
-    Get a figure with an Image glyph of array
-    Set the title to name and return the colormap toolbox for the image
-    """
+    """_summary_
+
+    Parameters
+    ----------
+    array : np.ndarray
+        _description_
+    name : str
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """    
     figure = BokehFigure()
     figure.set_title(name)
     image = figure.add_image(array=array)

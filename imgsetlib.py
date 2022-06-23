@@ -4,15 +4,10 @@ Here I load h5 file and do alignment of image sets in respect to the reference o
 
 import h5py
 import numpy as np
-#from skimage import transform, io, exposure
 from pystackreg import StackReg
-#import cv2 as cv
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from copy import deepcopy
-from skimage import transform as sktransform
-
-
-#plt.close("all")
+from skimage import transform as sktransform    
 
 
 class Imgset:
@@ -22,9 +17,16 @@ class Imgset:
     Then saves transformation matrix and transformed unwrapped phase 
     to the same h5 file"""
     def __init__(self, filename, order):
-        """file name is the name of the h5 file. Order is the number of the image set"""
-        """read data"""
-        self.filename = filename    
+        """Creates an object of an imageset
+        Parameters
+        ----------
+        filename : str
+            name of the h5 file
+        order : int
+            number of the image set
+        """
+        # read data
+        self.filename = filename
         self.order = order
         f = h5py.File(filename, 'r')
 
@@ -70,7 +72,7 @@ class Imgset:
 
         f.close()
         
-    """define help functions:"""
+    # define help functions:
     def make_same_size(self,img_refsize, img_changesize):
         refsize0 = img_refsize[0].size; refsize1 = img_refsize[1].size  
         changesize0 = img_changesize[0].size; changesize1 = img_changesize[1].size
@@ -133,24 +135,64 @@ class Imgset:
     #     tmat_inv[1,2] = tmat_inv[1,2]*(-1)
     #     return tmat_inv
 
+
+            # """makes autoalignment of unwrapped phases images, aligning just objest without background
+        # roughnes = rougness of estimation the border betwen object and background. 
+        # Low roughness estimation can be disrupted by noise.
+        # """
+
     def autoalign(self, rougness=500, del_back=True, keeporiginalsize = False, **images):
-        """makes autoalignment of unwrapped phases images, aligning just objest without background
+        """Makes autoalignment of selected images, aligning just object without background
         roughnes = rougness of estimation the border betwen object and background. 
         Low roughness estimation can be disrupted by noise.
+
+        Parameters
+        ----------
+        roughness : int
+            rougness of estimation the border betwen object and background. 
+            Low roughness estimation can be disrupted by noise.
+        del_back : Boolean
+            True = delete background and proceed autoalignment only with boleen images (blakc and white);
+            this is only for autoalignment, images are saved with original walues;
+            False = proceed alignment on original images
+        keeporiginalsize : Boolean
+            True = keeps oringinal size of images;
+            False = crop the images that tey will have the same number of pixels as an reference imageset 
+            and saves them in this new shape
+        **images : ['img_stat', 'img_move', 'transformation']
+            img_stat = reference image;
+            img_move = moving image;
+            transformation = ['RIGID_BODY', 'TRANSLATION', 'SCALED_ROTATION', 'AFFINE', 'BILINEAR']
         """
         try:
             img_stat = images['img_stat']
             img_move = images['img_move']
-            print(">>> using user values")
-
+            print(">>> autoalign: using user kind of images")
         except:
             img_stat = self.amplitude_stat
             img_move = self.amplitude
-            print(">>> using default values")
+            print(">>> autoalign: using default kind of images")
 
         img_move = self.make_same_size(self.amplitude_stat, img_move )
         
-        sr = StackReg(StackReg.RIGID_BODY)
+        try:
+            transformation = images['transformation']
+        except:
+            transformation = 'RIGID_BODY'
+
+        if transformation == 'TRANSLATION':
+            sr = StackReg(StackReg.TRANSLATION)
+        elif transformation == 'SCALED_ROTATION':
+            sr = StackReg(StackReg.SCALED_ROTATION)
+        elif transformation == 'AFFINE':
+            sr = StackReg(StackReg.AFFINE)
+        elif transformation == 'BILINEAR':
+            sr = StackReg(StackReg.BILINEAR)
+        else:
+            sr = StackReg(StackReg.RIGID_BODY)
+        
+
+
         if del_back==True:
             img_stat_noback = self.delete_background(img_stat, rougness)
             self.img_stat_noback=img_stat_noback
@@ -168,26 +210,16 @@ class Imgset:
         self.img_aligned = sktransform.warp(img_move, self.tmat)
         
         
-        """Save data to h5 file"""
-        # f = h5py.File(self.filename, "a")  
-        # datasets = ["tmat", "tmat_invertcoord", "unwrapped_phase_aligned"]
-        # group = f['/imageset'+ str(self.order)]
-        # for dataset_name in datasets:            
-        #     if dataset_name in group.keys():                
-        #         del group[dataset_name]
-        # f.create_dataset('imageset' + str(self.order)+'/tmat', data = self.tmat)
-        # #f.create_dataset('imageset' + str(self.order)+'/tmat_invertcoord', data = self.tmat_inv)
-        # #f.create_dataset('imageset' + str(self.order)+'/unwrapped_phase_aligned', data = self.img_aligned)        
-        # f.close()
+        # Save data to h5 file:
 
         self.savedata(["tmat"],[self.tmat])
-        if keeporiginalsize == False:
+        if not keeporiginalsize:
             datasets = [self.img, self.ref, self.amplitude, self.phase, self.unwrapped_phase]
             count=0
             for dataset in datasets:
                 datasets[count] = self.make_same_size(self.amplitude_stat, dataset)
                 count+=1
-        self.savedata(['img','ref','amplitude','phase','unwrapped_phase'], datasets)
+            self.savedata(['img','ref','amplitude','phase','unwrapped_phase'], datasets)
     
     def savedata(self, datasets_names, datasets_data):
         """Save data to the h5 file. dataset_names = list of datasets, for example ["tmat", "unwrapped_phase_aligned"]
@@ -207,7 +239,8 @@ class Imgset:
 
     def manual_fine(self, img_stat, img_move, initial_transform_matrix=np.identity(3)):
         from align_panel import fine_adjust
-        initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix) #make enclosed variable containing the transformation matrix
+        #make enclosed variable containing the transformation matrix
+        initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix) 
         layout, fine_getter = fine_adjust(img_stat, img_move, initial_transform = initial_transform)
         print(">>> to kill server pres ctrl+c into terminal")
         layout.show(threaded=False)
@@ -244,74 +277,3 @@ class Imgset:
             return (self.img_aligned)
         else:
             print(">>> Error: no transformation matrix")
-
-
-
-        
-
-
-
-    
-
-# ##############################################################################
-# imgset1 = Imgset("mytestfile5.h5",1)
-# imgset1.autoalign(1000,del_back=True)
-# ##############################################################################
-
-# """try to display some results:"""
-
-
-# fig, ax = plt.subplots(1, 5, figsize=(20, 9))
-
-# im0 = ax[0].imshow(imgset1.unwrapped_phase_stat, cmap='gist_rainbow')
-# ax[0].set_title('unwrapped_phase_stat')
-# ax[0].axis('off')
-# fig.colorbar(im0, ax=ax[0])
-
-# im1 = ax[1].imshow(imgset1.unwrapped_phase, cmap='gist_rainbow')
-# ax[1].set_title('unwrapped_phase')
-# ax[1].axis('off')
-# fig.colorbar(im1, ax=ax[1])
-
-# im2 = ax[2].imshow(imgset1.img_aligned, cmap='gist_rainbow')
-# ax[2].set_title('img_aligned')
-# ax[2].axis('off')
-# fig.colorbar(im2, ax=ax[2])
-
-# im3 = ax[3].imshow((imgset1.unwrapped_phase_stat + imgset1.img_aligned)/2, cmap='gist_rainbow')
-# ax[3].set_title('sum')
-# ax[3].axis('off')
-# fig.colorbar(im3, ax=ax[3])
-
-# im4 = ax[4].imshow((imgset1.unwrapped_phase_stat - imgset1.img_aligned)*2, cmap='gist_rainbow')
-# ax[4].set_title('dif')
-# ax[4].axis('off')
-# fig.colorbar(im4, ax=ax[4])
-
-
-# fig, ax = plt.subplots(1, 5, figsize=(20, 9))
-
-# im0 = ax[0].imshow(imgset1.img_stat_noback, cmap='gist_rainbow')
-# ax[0].set_title('unwrapped_phase_stat')
-# ax[0].axis('off')
-# fig.colorbar(im0, ax=ax[0])
-
-# im1 = ax[1].imshow(imgset1.img_move_noback, cmap='gist_rainbow')
-# ax[1].set_title('unwrapped_phase')
-# ax[1].axis('off')
-# fig.colorbar(im1, ax=ax[1])
-
-# im2 = ax[2].imshow(imgset1.img_aligned, cmap='gist_rainbow')
-# ax[2].set_title('img_aligned')
-# ax[2].axis('off')
-# fig.colorbar(im2, ax=ax[2])
-
-# im3 = ax[3].imshow((imgset1.unwrapped_phase_stat + imgset1.img_aligned)/2, cmap='gist_rainbow')
-# ax[3].set_title('sum')
-# ax[3].axis('off')
-# fig.colorbar(im3, ax=ax[3])
-
-# im4 = ax[4].imshow((imgset1.unwrapped_phase_stat - imgset1.img_aligned)*2, cmap='gist_rainbow')
-# ax[4].set_title('dif')
-# ax[4].axis('off')
-# fig.colorbar(im4, ax=ax[4])
