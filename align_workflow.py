@@ -215,10 +215,14 @@ class AutoAlignStep(HDF5Step):
 
         image_choice = pn.widgets.Select(name='Image choice',
                                          options=[*self.img_choices().keys()])
+
+        run_checkbox = pn.widgets.Checkbox(name='Run autoalign')# 
+
         layout.panes[0].add_element_group('params',
                                           {'rougness_int_input': rougness_int_input,
                                            'del_back_checkbox': del_back_checkbox,
-                                           'image_choice': image_choice},
+                                           'image_choice': image_choice,
+                                           'run_checkbox': run_checkbox}, #
                                            container=pn.layout.Card(title='Parameters'))
         return layout
     
@@ -226,11 +230,13 @@ class AutoAlignStep(HDF5Step):
         roughness = pane.panes[0]['rougness_int_input'].value
         del_back = pane.panes[0]['del_back_checkbox'].value
         img_choice = pane.panes[0]['image_choice'].value
+        run = pane.panes[0]['run_checkbox'].value
         self.results.set(meta={'img_choice': img_choice})
 
-        imgset = self.load_hdf5()
-        static, moving = self.img_choices()[img_choice](imgset)
-        imgset.autoalign(roughness, del_back=del_back, img_stat=static, img_move=moving)
+        if run:
+            imgset = self.load_hdf5()
+            static, moving = self.img_choices()[img_choice](imgset)
+            imgset.autoalign(roughness, del_back=del_back, img_stat=static, img_move=moving)
         super().after(pane)
 
     @staticmethod
