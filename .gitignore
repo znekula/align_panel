@@ -144,3 +144,6 @@ test_data/
 test*
 # folders
 testingplace.py
+examples/
+example*
+

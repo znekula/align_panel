@@ -4,6 +4,7 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 import panel as pn
 
+from aperture.utils.notebook_tools import is_notebook
 from aperture.display.figure import BokehFigure
 from aperture.display.utils.colormaps import get_bokeh_palette
 from aperture.layouts.panes import SimplePanes
@@ -220,10 +221,12 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
             
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
         overlay_image.update_raw_image(warped_moving, fix_clims=True)#change
-        static_fig.refresh_pane()
+        if is_notebook():
+            static_fig.refresh_pane()
 
         overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)#change
-        zero_fig.refresh_pane()
+        if is_notebook():
+            zero_fig.refresh_pane()
 
     static_toolbox = static_fig.get_toolbox(name=f'Static toolbox')
     moving_toolbox = moving_fig.get_toolbox(name=f'Moving toolbox')
@@ -307,8 +310,9 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     
     def update_moving_sync():
         moving_im.update_raw_image(static - transformer_moving.get_transformed_image(), fix_clims=True)
-        fig.refresh_pane()
-
+        if is_notebook():
+            fig.refresh_pane()
+    
     async def update_moving():
         update_moving_sync()
 

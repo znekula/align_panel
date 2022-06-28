@@ -5,6 +5,8 @@ import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 import pathlib
 from functools import partial
+from skimage import transform as sktransform    
+import numpy as np
 
 import panel as pn
 import aperture as ap
@@ -293,19 +295,22 @@ class FineAlignStep(HDF5Step):
 
     def before(self, **kwargs):
         imgset = self.load_hdf5()
-        initial_transform = imgset.tmat
+        try:
+            initial_transform_matrix = imgset.tmat
+        except:
+            initial_transform_matrix = np.identity(3)
+        self.initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix)
         img_choice = self.get_result('img_choice', 'Amplitude')
         img_static, img_moving = self.img_choices()[img_choice](imgset)
         self.results.add_child('static', data=img_static)
         self.results.add_child('moving', data=img_moving)
-        self.results.add_child('initial_transform', data=initial_transform)
 
     def pane(self):
         md = pn.pane.Markdown(object="""
 - Adjust alignment by using the arrows and plot tools
 """, min_width=400)
         layout, getter = fine_adjust(self.results['static'].data, self.results['moving'].data,
-                                     initial_transform=self.get_result('points_transform'))
+                                     initial_transform=self.initial_transform)
         self.results.set(data=lambda **x: getter())
         layout.insert(0, md)
         self.tmat_fine = getter().get('transform', None).params
