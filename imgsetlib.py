@@ -9,6 +9,10 @@ from pystackreg import StackReg
 from copy import deepcopy
 from skimage import transform as sktransform    
 
+class H5file:
+    def __init__(self,filename):
+        f = h5py.File(filename, 'r')
+
 
 class Imgset:
     """loads image set (labeled by order number), and 
