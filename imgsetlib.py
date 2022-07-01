@@ -5,7 +5,6 @@ Here I load h5 file and do alignment of image sets in respect to the reference o
 import h5py
 import numpy as np
 from pystackreg import StackReg
-#import matplotlib.pyplot as plt
 from copy import deepcopy
 from skimage import transform as sktransform    
 
@@ -20,78 +19,101 @@ class Imgset:
     makes automatic alignment by StackReg. 
     Then saves transformation matrix and transformed unwrapped phase 
     to the same h5 file"""
-    def __init__(self, filename, order):
+    def __init__(self, filename, imgset_name):
         """Creates an object of an imageset
         Parameters
         ----------
         filename : str
             name of the h5 file
-        order : int
-            number of the image set
+        imgset_name : str
+            name of the imageset
         """
         # read data
         self.filename = filename
-        self.order = order
+        self.imgset_name = imgset_name 
         f = h5py.File(filename, 'r')
 
-        dset_unwrapped_phase_stat = f['imageset' + str(0) +'/unwrapped_phase']
+        # find refernce imageset
+        for groupname in list(f.keys()):
+            if groupname[0:13] == 'ref_imageset_':
+                imgsetref_fullname = groupname
+                imgsetref_name = groupname[13:]
+                if imgsetref_name == imgset_name:
+                    self.imgset_fullname = imgsetref_fullname
+                else:
+                    self.imgset_fullname = 'imageset_' + imgset_name
+                print(">>> "+ groupname)
+                break
+
+            else:
+                print(">>> "+ groupname)
+                print(groupname[0:13] )
+        
+
+        dset_unwrapped_phase_stat = f[imgsetref_fullname +'/unwrapped_phase']
         self.unwrapped_phase_stat = np.asarray(dset_unwrapped_phase_stat)
-        dset_unwrapped_phase = f['imageset' + str(order) +'/unwrapped_phase']
+        dset_unwrapped_phase = f[self.imgset_fullname +'/unwrapped_phase']
         self.unwrapped_phase = np.asarray(dset_unwrapped_phase)
         
-        dset_amplitude_stat = f['imageset' + str(0) +'/amplitude']
+        dset_amplitude_stat = f[imgsetref_fullname +'/amplitude']
         self.amplitude_stat = np.asarray(dset_amplitude_stat)
-        dset_amplitude = f['imageset' + str(order) +'/amplitude']
+        dset_amplitude = f[self.imgset_fullname +'/amplitude']
         self.amplitude = np.asarray(dset_amplitude)
 
-        dset_img_stat = f['imageset' + str(0) +'/img']
+        dset_img_stat = f[imgsetref_fullname +'/img']
         self.img_stat = np.asarray(dset_img_stat)
-        dset_img = f['imageset' + str(order) +'/img']
+        dset_img = f[self.imgset_fullname +'/img']
         self.img = np.asarray(dset_img)
 
-        dset_ref_stat = f['imageset' + str(0) +'/ref']
+        dset_ref_stat = f[imgsetref_fullname +'/ref']
         self.ref_stat = np.asarray(dset_ref_stat)
-        dset_ref = f['imageset' + str(order) +'/ref']
+        dset_ref = f[self.imgset_fullname +'/ref']
         self.ref = np.asarray(dset_ref)
 
-        dset_phase_stat = f['imageset' + str(0) +'/phase']
+        dset_phase_stat = f[imgsetref_fullname +'/phase']
         self.phase_stat = np.asarray(dset_phase_stat)
-        dset_phase = f['imageset' + str(order) +'/phase']
+        dset_phase = f[self.imgset_fullname +'/phase']
         self.phase = np.asarray(dset_phase)
 
-        dset_img_metadata_stat = f['imageset' + str(0) +'/img_metadata']
+        dset_img_metadata_stat = f[imgsetref_fullname +'/img_metadata']
         self.img_metadata_stat = np.asarray(dset_img_metadata_stat)
-        dset_img_metadata = f['imageset' + str(order) +'/img_metadata']
+        dset_img_metadata = f[self.imgset_fullname +'/img_metadata']
         self.img_metadata = np.asarray(dset_img_metadata)
 
-        dset_ref_metadata_stat = f['imageset' + str(0) +'/ref_metadata']
+        dset_ref_metadata_stat = f[imgsetref_fullname +'/ref_metadata']
         self.ref_metadata_stat = np.asarray(dset_ref_metadata_stat)
-        dset_ref_metadata = f['imageset' + str(order) +'/ref_metadata']
+        dset_ref_metadata = f[self.imgset_fullname +'/ref_metadata']
         self.ref_metadata = np.asarray(dset_ref_metadata)
 
-        group = f['/imageset'+ str(self.order)]
+        group = f['/imageset_'+ self.imgset_name]
         if "tmat" in group.keys():
-            dset_tmat = f['imageset' + str(order) +'/tmat']
+            dset_tmat = f[self.imgset_fullname +'/tmat']
             self.tmat = np.asarray(dset_tmat)
 
         f.close()
         
     # define help functions:
     def make_same_size(self,img_refsize, img_changesize):
-        refsize0 = img_refsize[0].size; refsize1 = img_refsize[1].size  
-        changesize0 = img_changesize[0].size; changesize1 = img_changesize[1].size
-        img_changed = img_changesize
+        print(">>> start make same size")
+        refsize0 = img_refsize[0].size; 
+        refsize1 = img_refsize[:,0].size  
+        changesize0 = img_changesize[0].size; 
+        changesize1 = img_changesize[:,0].size
         dif0 = changesize0 - refsize0
+        print(">>> dif 0 = "+str(dif0))
+        dif1 = changesize1 - refsize1
+        print(">>> dif 1 = "+str(dif0))
+        img_changed = deepcopy(img_changesize)
         if dif0 < 0 :
-            img_changed = np.append(img_changed,np.zeros((dif0,changesize1)),axis = 0)
+            print(">>> smaller")
+            img_changed = np.append(img_changed,np.zeros((-dif0,changesize1)),axis = 0)
         elif dif0 > 0 :
-            img_changed = img_changed[dif0:,:] 
-        changesize0 = img_changesize[0].size; changesize1 = img_changesize[1].size   
-        dif1 = changesize1 - refsize1    
+            print(">>> bigger")
+            img_changed = img_changed[:-dif0,:]    
         if dif1 < 0 :
-            img_changed = np.append(img_changed,np.zeros((changesize0,dif1)),axis = 1)
+            img_changed = np.append(img_changed,np.zeros((changesize0 - dif0,-dif1)),axis = 1)
         elif dif1 > 0 :
-            img_changed = img_changed[:,dif1:]
+            img_changed = img_changed[:,:-dif1]
         return img_changed
     
     def delete_background(self,img_original, reduction = 500, value_high = 1, value_low = 0 ):
@@ -141,19 +163,19 @@ class Imgset:
 
 
             # """makes autoalignment of unwrapped phases images, aligning just objest without background
-        # roughnes = rougness of estimation the border betwen object and background. 
+        # roughnes = roughness of estimation the border betwen object and background. 
         # Low roughness estimation can be disrupted by noise.
         # """
 
-    def autoalign(self, rougness=500, del_back=True, keeporiginalsize = False, **images):
+    def autoalign(self, roughness=500, del_back=True, keeporiginalsize = False, **images):
         """Makes autoalignment of selected images, aligning just object without background
-        roughnes = rougness of estimation the border betwen object and background. 
+        roughnes = roughness of estimation the border betwen object and background. 
         Low roughness estimation can be disrupted by noise.
 
         Parameters
         ----------
         roughness : int
-            rougness of estimation the border betwen object and background. 
+            roughness of estimation the border betwen object and background. 
             Low roughness estimation can be disrupted by noise.
         del_back : Boolean
             True = delete background and proceed autoalignment only with boleen images (blakc and white);
@@ -198,9 +220,9 @@ class Imgset:
 
 
         if del_back==True:
-            img_stat_noback = self.delete_background(img_stat, rougness)
+            img_stat_noback = self.delete_background(img_stat, roughness)
             self.img_stat_noback=img_stat_noback
-            img_move_noback = self.delete_background(img_move, rougness)
+            img_move_noback = self.delete_background(img_move, roughness)
             self.img_move_noback=img_move_noback
             reg = sr.register_transform(img_stat_noback, img_move_noback)
         else:            
@@ -217,13 +239,18 @@ class Imgset:
         # Save data to h5 file:
 
         self.savedata(["tmat"],[self.tmat])
+        print(">>> saving")
         if not keeporiginalsize:
-            datasets = [self.img, self.ref, self.amplitude, self.phase, self.unwrapped_phase]
+            datasets = [self.amplitude, self.phase, self.unwrapped_phase]
             count=0
             for dataset in datasets:
                 datasets[count] = self.make_same_size(self.amplitude_stat, dataset)
                 count+=1
-            self.savedata(['img','ref','amplitude','phase','unwrapped_phase'], datasets)
+            self.savedata(['amplitude','phase','unwrapped_phase'], datasets)
+            # rewrite images in memory
+            self.amplitude = datasets[0]
+            self.phase = datasets[1]
+            self.unwrapped_phase = datasets[2]
     
     def savedata(self, datasets_names, datasets_data):
         """Save data to the h5 file. dataset_names = list of datasets, for example ["tmat", "unwrapped_phase_aligned"]
@@ -232,12 +259,12 @@ class Imgset:
         #datasets_names = ["tmat"]
         #datasets_data = [self.tmat]
 
-        group = f['/imageset'+ str(self.order)]
+        group = f['/imageset_'+ self.imgset_name]
         count=0
         for dataset_name in datasets_names:
             if dataset_name in group.keys():                
                 del group[dataset_name]
-            f.create_dataset('imageset' + str(self.order)+'/'+dataset_name, data = datasets_data[count])
+            f.create_dataset('imageset_' + self.imgset_name +'/'+dataset_name, data = datasets_data[count])
             count +=1       
         f.close()
 

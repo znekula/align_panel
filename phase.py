@@ -43,7 +43,7 @@ class Imgset_new:
         self.unwrapped_phase = wave.unwrapped_phase().data
     
     # Save data to h5 file:
-    def save(self, filename, imgset_name):
+    def save(self, filename, imgset_name, imgset_ref = False):
         """save data into hdf5 file into supgroup of specified order
         if order = 0 then it is the reference imageset (later for alignment with other imagesets)
         for nonreference imagesets use as order any integer
@@ -54,18 +54,24 @@ class Imgset_new:
             path and name of h5 file where you want to save data
         imgset_name : str
             Name of the imageset
+        imgset_ref = bool
+            True = imageset is supposed to be used as a reference for alignment of the other imagesets;
+            False = just an ordinary imageset, supposed to be aligned according to another reference-imageset.
+            In an h5 file can be only one reference imgageset.
         """
+        if imgset_ref:
+            prefix = 'ref_'
+        else:
+            prefix = ''
 
         f = h5py.File(filename, "a")
 
-
-        
-        f.create_dataset('imageset_' + imgset_name+'/img', data = self.img)
-        f.create_dataset('imageset_' + imgset_name+'/ref', data = self.ref)
-        f.create_dataset('imageset_' + imgset_name+'/amplitude', data = self.amplitude)
-        f.create_dataset('imageset_' + imgset_name+'/phase', data = self.phase)
-        f.create_dataset('imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
-        f.create_dataset('imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta))
-        f.create_dataset('imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta))
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img', data = self.img)
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref', data = self.ref)
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/amplitude', data = self.amplitude)
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/phase', data = self.phase)
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta))
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta))
         
         f.close()

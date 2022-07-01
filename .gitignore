@@ -142,8 +142,10 @@ autocorr_udf/
 *.h5
 test_data/
 test*
+*.ipynb
 # folders
 testingplace.py
 examples/
-example*
+
+
 
