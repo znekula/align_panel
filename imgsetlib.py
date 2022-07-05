@@ -10,7 +10,36 @@ from skimage import transform as sktransform
 
 class H5file:
     def __init__(self,filename):
+        """This class is used for browsing the content of h5 file and 
+        listing imagesets inside
+
+        Parameters
+        ----------
+        filename : str
+            data path to the h5 file
+        """
         f = h5py.File(filename, 'r')
+        groups = list(f.keys())
+        f.close()
+        self.ref_imageset_name=[]
+        self.ref_imageset_fullname=[]
+        self.imageset_names=[]
+        self.imageset_fullnames = []
+        self.rest=[]
+        
+        for group in groups:
+            parts = group.split('_', 2)
+            if 'ref'== parts[0] and 'imageset'==parts[1]:
+                self.ref_imageset_name.append(parts[2])
+                self.ref_imageset_fullname.append(group)
+            elif 'ord'==parts[0] and 'imageset'==parts[1] :
+                self.imageset_names.append(parts[2])
+                self.imageset_fullnames.append(group)
+            else:
+                self.rest.append(group)
+
+
+
 
 
 class Imgset:
@@ -33,6 +62,7 @@ class Imgset:
         self.imgset_name = imgset_name 
         f = h5py.File(filename, 'r')
 
+
         # find refernce imageset
         for groupname in list(f.keys()):
             if groupname[0:13] == 'ref_imageset_':
@@ -41,7 +71,7 @@ class Imgset:
                 if imgsetref_name == imgset_name:
                     self.imgset_fullname = imgsetref_fullname
                 else:
-                    self.imgset_fullname = 'imageset_' + imgset_name
+                    self.imgset_fullname = 'ord_imageset_' + imgset_name
                 print(">>> "+ groupname)
                 break
 
@@ -76,16 +106,19 @@ class Imgset:
         self.phase = np.asarray(dset_phase)
 
         dset_img_metadata_stat = f[imgsetref_fullname +'/img_metadata']
-        self.img_metadata_stat = np.asarray(dset_img_metadata_stat)
+        self.img_metadata_stat = str(np.asarray(dset_img_metadata_stat))[2:-1]
         dset_img_metadata = f[self.imgset_fullname +'/img_metadata']
-        self.img_metadata = np.asarray(dset_img_metadata)
+        self.img_metadata = str(np.asarray(dset_img_metadata))[2:-1]
 
+
+        #self.test_meta = dset_img.attrs['meta']
+ 
         dset_ref_metadata_stat = f[imgsetref_fullname +'/ref_metadata']
-        self.ref_metadata_stat = np.asarray(dset_ref_metadata_stat)
+        self.ref_metadata_stat = str(np.asarray(dset_ref_metadata_stat))[2:-1]
         dset_ref_metadata = f[self.imgset_fullname +'/ref_metadata']
-        self.ref_metadata = np.asarray(dset_ref_metadata)
+        self.ref_metadata = str(np.asarray(dset_ref_metadata))[2:-1]
 
-        group = f['/imageset_'+ self.imgset_name]
+        group = f['/'+str(self.imgset_fullname)]
         if "tmat" in group.keys():
             dset_tmat = f[self.imgset_fullname +'/tmat']
             self.tmat = np.asarray(dset_tmat)
@@ -298,13 +331,17 @@ class Imgset:
         else:
             print(">>> New transformation matrix rejected")
 
-    def apply_tmat(self, image):
+    def apply_tmat(self, image, tmat=None):
         """image = image which should be aligne by the transformation matrix"""
-        if 'tmat' in self.__dict__:
-            #self.tmat_inv = self.inverse_coordinate_tmat(self.tmat)
-            dimensions = image.shape
-            dimensions = (dimensions[1],dimensions[0])#inverse order of coordinates
-            self.img_aligned = sktransform.warp(image, self.tmat)
-            return (self.img_aligned)
+        if tmat is None:
+            tmat = self.tmat
+
+        if isinstance(image, np.ndarray):
+            pass
         else:
-            print(">>> Error: no transformation matrix")
+            # image == (imgset_7", "phase")
+            imgset, img = image
+            image = self.get_image(imgset, img)
+
+        img_aligned = sktransform.warp(image, tmat)
+        return img_aligned

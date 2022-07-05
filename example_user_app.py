@@ -12,7 +12,7 @@ imgset1 = Imgset("test_data/mytestfile.h5", '-4-H')
 
 # do autoalignment
 if True:
-    imgset1.autoalign(1000,del_back=True, img_stat = imgset1.unwrapped_phase_stat, img_move = imgset1.unwrapped_phase, keeporiginalsize = False)
+    imgset1.autoalign(1000,del_back=True, img_stat = imgset1.unwrapped_phase_stat, img_move = imgset1.unwrapped_phase, keeporiginalsize = False, transformation = 'RIGID_BODY')
     print(">>> This is the tmat from autoalignment:"); print(imgset1.tmat)
 
 # set images for manual alignment

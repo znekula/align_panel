@@ -62,7 +62,7 @@ class Imgset_new:
         if imgset_ref:
             prefix = 'ref_'
         else:
-            prefix = ''
+            prefix = 'ord_'
 
         f = h5py.File(filename, "a")
 
@@ -71,7 +71,7 @@ class Imgset_new:
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/amplitude', data = self.amplitude)
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/phase', data = self.phase)
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta))
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta.as_dictionary()))
         
         f.close()

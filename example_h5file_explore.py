@@ -1,32 +1,27 @@
 # Created by Zdenek Nekula 2022
-# This is an example showing the functionality of "phase" library
+# Shows how to explore content of an HDF5 file
+
+from imgsetlib import H5file
+
+# define a path to a h5 datafile
+myfilename = 'test_data/mytestfile.h5'
+mydatafile = H5file(myfilename)
 
 
-# import library
-from phase import Imgset_new
 
-# define data paths
-img0_path = 'test_data/+4-H.dm3'
-ref0_path = 'test_data/+4-R2.dm3'
 
-img1_path = 'test_data/-4-H.dm3'
-ref1_path = 'test_data/-4-R2.dm3'
+# Print all imagesets inside the h5 file
+print ("this is the content:")
+print ("reference imageset name: " + str(mydatafile.ref_imageset_name))
+print ("imagesets names: " + str(mydatafile.imageset_names))
+print ("the rest: " + str(mydatafile.rest))
 
-# create new imagesets
-imgset_new0 = Imgset_new(img0_path,ref0_path)
-imgset_new1 = Imgset_new(img1_path,ref1_path)
+print ("Here are the full names of imagesets:")
+print ("reference imageset full name: " + str(mydatafile.ref_imageset_fullname))
+print ("imagesets full names: " + str(mydatafile.imageset_fullnames))
 
-# do phase reconstruction
-imgset_new0.phase_reconstruction()
-imgset_new1.phase_reconstruction()
 
-# save data into one h5 file
-filename = "test_data/mytestfile.h5"
-imgset_new0.save(filename,'+4-H', imgset_ref=True)
-imgset_new1.save(filename,'-4-H', imgset_ref=False)
 
-# print(imgset_new0.img_meta)
-# print(str(imgset_new0.img_meta))
 
 
 # Inner structure of h5 datafile:
@@ -60,4 +55,3 @@ imgset_new1.save(filename,'-4-H', imgset_ref=False)
 # |     |—— (d) phase
 # |     |—— (d) unwrapped_phase
 # |     |—— (d) tmat 
-
