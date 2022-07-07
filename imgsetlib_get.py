@@ -66,67 +66,54 @@ class Imgset:
         # find refernce imageset
         for groupname in list(f.keys()):
             if groupname[0:13] == 'ref_imageset_':
-                imgsetref_fullname = groupname
-                imgsetref_name = groupname[13:]
-                if imgsetref_name == imgset_name:
-                    self.imgset_fullname = imgsetref_fullname
+                self.imgsetref_fullname = groupname
+                self.imgsetref_name = groupname[13:]
+                if self.imgsetref_name == imgset_name:
+                    self.imgset_fullname = self.imgsetref_fullname
                 else:
                     self.imgset_fullname = 'ord_imageset_' + imgset_name
-                print(">>> "+ groupname)
                 break
-
-            else:
-                print(">>> "+ groupname)
-                print(groupname[0:13] )
-        
-
-        dset_img_stat = f[imgsetref_fullname +'/img']
-        self.img_stat = np.asarray(dset_img_stat)
-        dset_img = f[self.imgset_fullname +'/img']
-        self.img = np.asarray(dset_img)
-
-        dset_img_metadata_stat = f[imgsetref_fullname +'/img_metadata']
-        self.img_metadata_stat = str(np.asarray(dset_img_metadata_stat))[2:-1]
-        dset_img_metadata = f[self.imgset_fullname +'/img_metadata']
-        self.img_metadata = str(np.asarray(dset_img_metadata))[2:-1]
-
-        try:
-            dset_unwrapped_phase_stat = f[imgsetref_fullname +'/unwrapped_phase']
-            self.unwrapped_phase_stat = np.asarray(dset_unwrapped_phase_stat)
-            dset_unwrapped_phase = f[self.imgset_fullname +'/unwrapped_phase']
-            self.unwrapped_phase = np.asarray(dset_unwrapped_phase)
-            
-            dset_amplitude_stat = f[imgsetref_fullname +'/amplitude']
-            self.amplitude_stat = np.asarray(dset_amplitude_stat)
-            dset_amplitude = f[self.imgset_fullname +'/amplitude']
-            self.amplitude = np.asarray(dset_amplitude)
-
-            dset_ref_stat = f[imgsetref_fullname +'/ref']
-            self.ref_stat = np.asarray(dset_ref_stat)
-            dset_ref = f[self.imgset_fullname +'/ref']
-            self.ref = np.asarray(dset_ref)
-
-            dset_phase_stat = f[imgsetref_fullname +'/phase']
-            self.phase_stat = np.asarray(dset_phase_stat)
-            dset_phase = f[self.imgset_fullname +'/phase']
-            self.phase = np.asarray(dset_phase)
-
-            dset_ref_metadata_stat = f[imgsetref_fullname +'/ref_metadata']
-            self.ref_metadata_stat = str(np.asarray(dset_ref_metadata_stat))[2:-1]
-            dset_ref_metadata = f[self.imgset_fullname +'/ref_metadata']
-            self.ref_metadata = str(np.asarray(dset_ref_metadata))[2:-1]
-
-            self.imageset_kind="hologrphy"
-        except:
-            self.imageset_kind="synchrotron"
-
-        group = f['/'+str(self.imgset_fullname)]
-        if "tmat" in group.keys():
-            dset_tmat = f[self.imgset_fullname +'/tmat']
-            self.tmat = np.asarray(dset_tmat)
-
         f.close()
         
+
+
+    def get_content(self):
+        f=h5py.File(self.filename, 'r')
+        group = f[self.imgset_fullname]
+        content = list(group.keys())
+        f.close()
+        return content
+
+    def get_data(self, dataname:str, stat=False):
+        """Get data directly from the h5 file of the imageset.
+
+        Parameters
+        ----------
+        dataname : str
+            Name of wanted data. One of theese 
+            [img, ref, img_metadata, ref_metadata, amplitude, phase, unwrapped_phase, tmat]
+        stat : bool, optional
+            True=data from the reference static imageset, 
+            False=data from the imageset itself, by default False
+        """
+        f=h5py.File(self.filename, 'r')
+        try:
+            # choose group as an imageset or a stat. imageset
+            if stat:
+                group = f[self.imgsetref_fullname]
+            else:
+                group = f[self.imgset_fullname]
+            # load data
+            if dataname in ['img_metadata', 'ref_metadata']:
+                dset = group[dataname]
+                data = str(np.asarray(dset))[2:-1]
+            else:
+                dset = group[dataname]
+                data = np.asarray(dset)
+        finally:
+            f.close()
+        return data
+     
     # define help functions:
     def make_same_size(self,img_refsize, img_changesize):
         print(">>> start make same size")
