@@ -8,16 +8,16 @@ os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 from imgsetlib import Imgset
 
 # create object of Imgset
-imgset1 = Imgset("test_data/mytestfile.h5", '-4-H')
+imgset1 = Imgset("test_data/synchrotron.h5", 'minus')
 
 # do autoalignment
 if True:
-    imgset1.autoalign(1000,del_back=True, img_stat = imgset1.unwrapped_phase_stat, img_move = imgset1.unwrapped_phase, keeporiginalsize = False, transformation = 'RIGID_BODY')
+    imgset1.autoalign(1000,del_back=True, img_stat = imgset1.img_stat, img_move = imgset1.img, keeporiginalsize = True, transformation = 'RIGID_BODY')
     print(">>> This is the tmat from autoalignment:"); print(imgset1.tmat)
 
 # set images for manual alignment
-img_stat_manual = imgset1.unwrapped_phase_stat
-img_move_manual = imgset1.unwrapped_phase
+img_stat_manual = imgset1.img_stat
+img_move_manual = imgset1.img
 
 # manual point alignmetn
 if False:
@@ -28,5 +28,3 @@ if True:
     imgset1.manual_fine(img_stat_manual, img_move_manual, imgset1.tmat)
 
 print("done all, this is the end")
-
-

@@ -5,7 +5,7 @@ import hyperspy.api as hs
 import h5py
 
 
-class Imgset_new:
+class Imgset_new_holography:
     def __init__(self, img_path, ref_path):
         """Creates a new image set consisting of one image of sample and one reference image. 
         Theese two images can be used to calculate amplitude, phase and unwrapped phase images.
@@ -29,12 +29,12 @@ class Imgset_new:
     def phase_reconstruction(self):
         """Makes phase reconstruction of loaded images in the imageset"""
         # Find side band - position and size in FFT of the ref image      
-        self.sb_position = self.ref_raw.estimate_sideband_position(sb='upper')
-        self.sb_size = self.ref_raw.estimate_sideband_size(self.sb_position)
+        sb_position = self.ref_raw.estimate_sideband_position(sb='upper')
+        sb_size = self.ref_raw.estimate_sideband_size(sb_position)
         
         # Reconstruction"""
-        wave = self.img_raw.reconstruct_phase(self.ref_raw, sb_position=self.sb_position, sb_size=self.sb_size,
-                                output_shape=(int(self.sb_size.data*2), int(self.sb_size.data*2)))
+        wave = self.img_raw.reconstruct_phase(self.ref_raw, sb_position=sb_position, sb_size=sb_size,
+                                output_shape=(int(sb_size.data*2), int(sb_size.data*2)))
         # Reconstructed images"""
         self.real = wave.real.data
         self.imag = wave.imag.data
