@@ -25,6 +25,9 @@ class Imgset_new_holography:
         
         self.img_meta = self.img_raw.metadata #metadata
         self.ref_meta = self.ref_raw.metadata #metadata
+
+        self.img_metaoriginal = self.img_raw.original_metadata #original metadata
+        self.ref_metaoriginal = self.ref_raw.original_metadata #original metadata
         
     def phase_reconstruction(self):
         """Makes phase reconstruction of loaded images in the imageset"""
@@ -71,7 +74,9 @@ class Imgset_new_holography:
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta.as_dictionary()))
-        
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary()))
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary()))   
+
         f.close()
 
 
@@ -89,6 +94,7 @@ class Imgset_new_synchrotron:
         self.img_raw =  hs.load(img_path)
         self.img = self.img_raw.data #image
         self.img_meta = self.img_raw.metadata #metadata
+        self.img_metaoriginal = self.img_raw.original_metadata #original metadata
 
     def save(self, filename, imgset_name, imgset_ref = False):
         """Saves data into hdf5 file into supgroup with specified name.
@@ -111,5 +117,6 @@ class Imgset_new_synchrotron:
 
         f = h5py.File(filename, "a")
         f.create_dataset(prefix + 'imageset_' + imgset_name+'/img', data = self.img)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))        
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))    
+        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary())) 
         f.close()

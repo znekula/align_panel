@@ -25,6 +25,11 @@ metadata_dict = ast.literal_eval(metadata_str) # convert them into dictionary
 metadata_prettyprint = yaml.dump(metadata_dict, default_flow_style=False) # make indentation to apear more beautifull
 print(metadata_prettyprint) # print in terminal
 
+# Print original metadata of image, not changed by hyperspy
+print(">>> image metadata original:")
+metadataoriginal = imgset1.get_data('img_metadataoriginal') #metadata are stored as string
+print(metadataoriginal)
+
 
 # load images:
 imgname = 'img'

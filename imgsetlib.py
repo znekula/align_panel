@@ -103,10 +103,10 @@ class Imgset:
                 group = f[self.imgsetref_fullname]
             else:
                 group = f[self.imgset_fullname]
-            # load data
-            if dataname in ['img_metadata', 'ref_metadata']:
+            # load data (loading metadata is different than loading images)
+            if dataname in ['img_metadata', 'ref_metadata','img_metadataoriginal',  'ref_metadataoriginal']:
                 dset = group[dataname]
-                data = str(np.asarray(dset))[2:-1] #cutout added sybols
+                data = str(np.asarray(dset))[2:-1] #cutout added sybolss
             else:
                 dset = group[dataname]
                 data = np.asarray(dset)
