@@ -10,14 +10,14 @@ from imgsetlib import Imgset
 # create object of Imgset
 imgset1 = Imgset("test_data/synchrotron.h5", 'minus')
 
+# load static image as reference and moving image to be aligned:
+img_stat = imgset1.get_data('img', stat=True)
+img_move = imgset1.get_data('img', stat=False)
+
 # do autoalignment
 if True:
-    imgset1.autoalign(1000,del_back=True, img_stat = imgset1.img_stat, img_move = imgset1.img, keeporiginalsize = True, transformation = 'RIGID_BODY')
-    print(">>> This is the tmat from autoalignment:"); print(imgset1.tmat)
-
-# set images for manual alignment
-img_stat_manual = imgset1.img_stat
-img_move_manual = imgset1.img
+    tmat = imgset1.autoalign(img_stat, img_move,'RIGID_BODY', 1000, del_back=True)
+    print(">>> This is the tmat from autoalignment:"); print(tmat)
 
 # manual point alignmetn
 if False:
@@ -25,6 +25,11 @@ if False:
 
 # manual fine alignment, uses transformation matrix in memory for prealignment
 if True:
-    imgset1.manual_fine(img_stat_manual, img_move_manual, imgset1.tmat)
+    tmat = imgset1.manual_fine(img_stat, img_move, tmat)
+
+# save transformation matrix into the file
+if True:
+    imgset1.savedata(['tmat'],[tmat])
+    print("tmat saved")
 
 print("done all, this is the end")

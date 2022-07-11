@@ -9,10 +9,10 @@ import numpy as np
 import ast
 import yaml
 # set datapaht to the h5 data file
-datapath = 'test_data/holography.h5'
+datapath = 'test_data/synchrotron.h5'
 
 # create an object of Imgset from the h5 file '-4-H':
-imgset1 = Imgset(datapath,'-4-H')
+imgset1 = Imgset(datapath,'minus')
 
 # get list of all data saved in file for this imageset:
 content = imgset1.get_content()
@@ -27,7 +27,7 @@ print(metadata_prettyprint) # print in terminal
 
 
 # load images:
-imgname = 'unwrapped_phase'
+imgname = 'img'
 img_stat = imgset1.get_data(imgname,stat=True)
 img_move = imgset1.get_data(imgname,stat=False)
 
