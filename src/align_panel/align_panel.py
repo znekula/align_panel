@@ -9,9 +9,8 @@ from aperture.display.figure import BokehFigure
 from aperture.display.utils.colormaps import get_bokeh_palette
 from aperture.layouts.panes import SimplePanes
 
-from image_transformer import ImageTransformer
+from .image_transformer import ImageTransformer
 
-from bokeh.plotting import figure
 
 if TYPE_CHECKING:
     import pandas as pd

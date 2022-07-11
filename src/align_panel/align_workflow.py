@@ -14,9 +14,9 @@ from aperture.layouts.step import Step
 from aperture.layouts.template_specs import ap_spec
 from aperture.utils import loading_context
 
-from phase import Imgset_new
-from imgsetlib import Imgset
-from align_panel import point_registration, fine_adjust
+from .imgsetnew import Imgset_new
+from .imgsetlib import Imgset
+from .align_panel import point_registration, fine_adjust
 
 class LoadStep(Step):
     @staticmethod
