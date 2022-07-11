@@ -146,6 +146,8 @@ test*
 # folders
 testingplace.py
 examples/
+notebooks/
+
 
 
 

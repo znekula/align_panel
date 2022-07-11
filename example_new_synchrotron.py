@@ -3,7 +3,7 @@
 
 
 # import library
-from phase import Imgset_new_synchrotron
+from imgsetnew import Imgset_new_synchrotron
 
 # define data paths
 img0_path = 'test_data/20201218_013_PtychographyRun01_Object_Amplitude.tif'

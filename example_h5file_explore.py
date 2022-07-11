@@ -4,21 +4,21 @@
 from imgsetlib import H5file
 
 # define a path to a h5 datafile
-myfilename = 'test_data/mytestfile.h5'
+myfilename = 'test_data/holography.h5'
 mydatafile = H5file(myfilename)
 
 
 
 
 # Print all imagesets inside the h5 file
-print ("this is the content:")
+print ("\nthis is the content:")
 print ("reference imageset name: " + str(mydatafile.ref_imageset_name))
 print ("imagesets names: " + str(mydatafile.imageset_names))
 print ("the rest: " + str(mydatafile.rest))
 
-print ("Here are the full names of imagesets:")
+print ("\nHere are the full names of imagesets:")
 print ("reference imageset full name: " + str(mydatafile.ref_imageset_fullname))
-print ("imagesets full names: " + str(mydatafile.imageset_fullnames))
+print ("imagesets full names: " + str(mydatafile.imageset_fullnames) + '\n')
 
 
 
