@@ -14,7 +14,7 @@ setup(
             "scikit-image",
             "panel",
             "pystackreg",
-            "https://github.com/matbryan52/aperture.git",
+            "aperture @ git+https://github.com/matbryan52/aperture.git",
         ],
     package_dir={"": "src"},
     packages=find_packages(where='src'),
