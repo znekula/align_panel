@@ -3,7 +3,7 @@
 # if you want later to sum or subtract images, they have to have the same shape
 
 # import libraries
-from imgsetlib import Imgset
+from align_panel.imgsetlib import Imgset
 
 # create instance of Imgset
 imgset1 = Imgset("test_data/holography.h5", '-4-H')

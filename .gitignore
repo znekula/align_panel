@@ -145,7 +145,6 @@ test*
 *.ipynb
 # folders
 testingplace.py
-examples/
 notebooks/
 
 

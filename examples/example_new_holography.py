@@ -3,7 +3,7 @@
 
 
 # import library
-from imgsetnew import Imgset_new_holography
+from align_panel.imgsetnew import Imgset_new_holography
 
 # define data paths
 img0_path = 'test_data/+4-H.dm3'

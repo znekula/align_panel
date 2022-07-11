@@ -2,7 +2,7 @@
 # This example shows how to display data which are saved in h5 file
 # Using the Imageset class representing one particlular imageset
 
-from imgsetlib import Imgset
+from align_panel.imgsetlib import Imgset
 import matplotlib.pyplot as plt
 from skimage import transform as sktransform
 import numpy as np

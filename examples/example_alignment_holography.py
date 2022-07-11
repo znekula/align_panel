@@ -5,7 +5,7 @@
 # import libraries
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
-from imgsetlib import Imgset
+from align_panel.imgsetlib import Imgset
 
 # create instance of Imgset
 imgset1 = Imgset("test_data/holography.h5", '-4-H')

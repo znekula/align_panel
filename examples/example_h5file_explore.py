@@ -1,7 +1,7 @@
 # Created by Zdenek Nekula 2022
 # Shows how to explore content of an HDF5 file
 
-from imgsetlib import H5file
+from align_panel.imgsetlib import H5file
 
 # define a path to a h5 datafile
 myfilename = 'test_data/holography.h5'
