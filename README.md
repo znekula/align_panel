@@ -2,9 +2,9 @@ Align Panel
 ===========
 align_panel is an python library for processing images from TEM-electron-holography and from synchrotron. 
 
-# Installation
+# 1 Installation
 
-## Create a new environment
+## 1.1 Create a new environment
 
 This is optional. Instalation of the library into a new environment will prevent any interaction with another libraries.
 
@@ -18,7 +18,7 @@ To crate a new environment by anaconda:
 
 Then, activate the new environment.
 
-## Installation
+## 1.2 Installation
 
 To install library, run:
 
@@ -26,7 +26,7 @@ To install library, run:
 pip install https://github.com/znekula/align_panel/releases/download/0.0.1/align_panel-0.0.1-py3-none-any.whl
 ```
 
-# Run application # under the development
+# 2 Run application # under the development
 
 To run the app:
 ```bash
@@ -35,7 +35,7 @@ align_panel
 
 within the environment into which the package was installed.
 
-# Examples
+# 3 Examples
 
 Examples are available at:
 <https://github.com/matbryan52/align_panel/tree/master/examples>
@@ -55,12 +55,12 @@ Recomended logical sequence of examples depends on your usecase:
 4) example_imageset_explore_synchrotron  --> show results and data
 
 
-# h5 file
+# 4 h5 file
 All data are stored in hdf5 file (shortly h5 file). Those files have inner hierarchy. The whole experiment is stored in one h5 file, consisting of several imagesets. The following paragraphs shows what is inside.
 
 
 
-## Electron holography
+## 4.1 Electron holography
 In electron holography, one allways makes imageges which are paired with their reference images. Each images and its ref. image are used for creating one imageset. Each h5 file contains as many imagesets as many images one made in the experiment. 
 
 
@@ -100,7 +100,7 @@ In electron holography, one allways makes imageges which are paired with their r
 |     |—— (d) unwrapped_phase  
 |     |—— (d) tmat   
   
-## Synchrotron
+## 4.2 Synchrotron
 All images from one experiment are stored in one h5 file. Each image is in its own imageset which contain: image, original metadata, metadata and transformation matrix.
 
  (f) datafile.h5  
