@@ -23,7 +23,7 @@ Then, activate the new environment.
 To install library, run:
 
 ```bash
-pip install https://github.com/matbryan52/align_panel/releases/download/0.0.1/align_panel-0.0.1-py3-none-any.whl
+pip install https://github.com/znekula/align_panel/releases/download/0.0.1/align_panel-0.0.1-py3-none-any.whl
 ```
 
 # Run application # under the development
@@ -42,19 +42,83 @@ Examples are available at:
 
 Recomended logical sequence of examples depends on your usecase:
 ## Electron holography
-1) example_new_holography --> load raw images, do phase reconstruction, save them into a new hdf5 file
-2) example_samesize --> check if all images have the same shape (same number of pixels), if not, it will modify them
-3) example_alignment_holography --> align images automatically and manually
-4) example_h5file_explore --> show what is inside of the newly created hdf5 file
-5) example_imageset_explore_holography --> show results and data
+1) example_new_holography  --> load raw images, do phase reconstruction, save them into a new hdf5 file
+2) example_samesize  --> check if all images have the same shape (same number of pixels), if not, it will modify them
+3) example_alignment_holography  --> align images automatically and manually
+4) example_h5file_explore  --> show what is inside of the newly created hdf5 file
+5) example_imageset_explore_holography  --> show results and data
 
 ## Synchrotron
-1) example_new_synchrotron
-2) example_alignment_synchrotron
-3) example_h5file_explore
-4) example_imageset_explore_synchrotron
+1) example_new_synchrotron  --> load raw images and save them into a new hdf5 file
+2) example_alignment_synchrotron  --> align images automatically and manually
+3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
+4) example_imageset_explore_synchrotron  --> show results and data
+
+
+# h5 file
+All data are stored in hdf5 file (shortly h5 file). Those files have inner hierarchy. The whole experiment is stored in one h5 file, consisting of several imagesets. The following paragraphs shows what is inside.
 
 
 
+## Electron holography
+In electron holography, one allways makes imageges which are paired with their reference images. Each images and its ref. image are used for creating one imageset. Each h5 file contains as many imagesets as many images one made in the experiment. 
 
+
+(f) datafile.h5  
+|—— (g) ref_imageset_name  
+|     |—— (d) img  
+|     |—— (d) ref  
+|     |—— (d) img_metadata  
+|     |—— (d) img_metadataoriginal  
+|     |—— (d) ref_metadata  
+|     |—— (d) ref_metadataoriginal  
+|     |—— (d) amplitude  
+|     |—— (d) phase  
+|     |—— (d) unwrapped_phase  
+|  
+|—— (g) ord_imageset_name1  
+|     |—— (d) img  
+|     |—— (d) ref  
+|     |—— (d) img_metadata  
+|     |—— (d) img_metadataoriginal  
+|     |—— (d) ref_metadata  
+|     |—— (d) ref_metadataoriginal  
+|     |—— (d) amplitude  
+|     |—— (d) phase  
+|     |—— (d) unwrapped_phase  
+|     |—— (d) tmat  
+|  
+|—— (g) ord_imageset_name2  
+|     |—— (d) img  
+|     |—— (d) ref  
+|     |—— (d) img_metadata  
+|     |—— (d) img_metadataoriginal  
+|     |—— (d) ref_metadata  
+|     |—— (d) ref_metadataoriginal  
+|     |—— (d) amplitude  
+|     |—— (d) phase  
+|     |—— (d) unwrapped_phase  
+|     |—— (d) tmat   
+  
+## Synchrotron
+All images from one experiment are stored in one h5 file. Each image is in its own imageset which contain: image, original metadata, metadata and transformation matrix.
+
+ (f) datafile.h5  
+ |—— (g) ref_imageset_name  
+ |     |—— (d) img  
+ |     |—— (d) img_metadata  
+ |     |—— (d) img_metadataoriginal  
+ |  
+ |—— (g) ord_imageset_name1  
+ |     |—— (d) img  
+ |     |—— (d) img_metadata  
+ |     |—— (d) img_metadataoriginal  
+ |     |—— (d) tmat  
+ |  
+ |—— (g) ord_imageset_name2  
+ |     |—— (d) img  
+ |     |—— (d) img_metadata  
+ |     |—— (d) img_metadataoriginal  
+ |     |—— (d) tmat    
+ 
 
