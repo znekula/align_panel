@@ -18,7 +18,10 @@ setup(
         ],
     package_dir={"": "src"},
     packages=find_packages(where='src'),
-    entry_points={},
+    entry_points={
+        'console_scripts': [
+            'align_panel=align_panel.cli:main',
+        ]},
     description="Package to align images in HDF5 format",
     long_description='''
 Package to align images in HDF5 format
