@@ -3,14 +3,11 @@ Align Panel
 align_panel is an python library for processing images from TEM-electron-holography and from synchrotron. 
 
 # 1 Installation
+Tis manual suppose that you are using the anaconda python distribution. To begin the installation, open the **Anaconda Powershell Prompt** command line.
 
 ## 1.1 Create a new environment
 
 This is optional. Instalation of the library into a new environment will prevent any interaction with another libraries.
-
-To create a new environmetn by python:
-`python -m venv ./path/to/environment` 
-(see <https://docs.python.org/3/library/venv.html> for more information).
 
 To crate a new environment by anaconda:
 `conda create --name myenv`
@@ -19,9 +16,12 @@ To crate a new environment by anaconda:
 Then, activate the new environment.
 
 ## 1.2 Installation
+First, install pystackreg library:
+```bash
+conda install -c conda-forge pystackreg
+```
 
-To install library, run:
-
+Second, install the align_panel library:
 ```bash
 pip install https://github.com/znekula/align_panel/releases/download/0.0.1/align_panel-0.0.1-py3-none-any.whl
 ```
