@@ -14,7 +14,7 @@ setup(
             "scikit-image",
             "panel",
             "pystackreg",
-            "aperture @ https://github.com/matbryan52/align_panel/releases/download/0.0.1/aperture-0.0.1.tar.gz",
+            "aperture @ https://github.com/znekula/align_panel/releases/download/0.0.1/aperture-0.0.1.tar.gz",
         ],
     package_dir={"": "src"},
     packages=find_packages(where='src'),
