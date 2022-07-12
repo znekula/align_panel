@@ -11,10 +11,9 @@ import numpy as np
 import panel as pn
 import aperture as ap
 from aperture.layouts.step import Step
-from aperture.layouts.template_specs import ap_spec
 from aperture.utils import loading_context
 
-from .imgsetnew import Imgset_new
+from .imgsetnew import Imgset_new_holography
 from .imgsetlib import Imgset
 from .align_panel import point_registration, fine_adjust
 
@@ -83,7 +82,7 @@ class LoadStep(Step):
                 return
             with loading_context(*buttons):
                 try:
-                    imgset = Imgset_new(real_path, ref_path)
+                    imgset = Imgset_new_holography(real_path, ref_path)
                 except Exception:
                     self.display_error('Error loading {key} images')
                     return
@@ -102,7 +101,7 @@ class LoadStep(Step):
                                             recon_button=moving_recon_button))
 
         def _run_reconstruction(event, *, key):
-            if not isinstance(self.results[key].data, Imgset_new):
+            if not isinstance(self.results[key].data, Imgset_new_holography):
                 self.display_error(f'No images loaded for {key}')
                 return
             with loading_context(*buttons):
@@ -159,14 +158,14 @@ class LoadStep(Step):
                 self.display_error('Unable to create/find output save directory')
                 return
             if ('static' not in self.results.keys()
-                    or not isinstance(self.results['static'].data, Imgset_new)):
+                    or not isinstance(self.results['static'].data, Imgset_new_holography)):
                 self.display_error(f'No images loaded for static')
                 return
             if ('moving' not in self.results.keys() or 
-                    not isinstance(self.results['moving'].data, Imgset_new)):
+                    not isinstance(self.results['moving'].data, Imgset_new_holography)):
                 self.display_error(f'No images loaded for moving')
                 return
-            # would be better to have a Imgset_new.is_valid() method ???
+            # would be better to have a Imgset_new_holography.is_valid() method ???
             self.results['static'].data.save(str(filepath), 0)
             self.results['moving'].data.save(str(filepath), 1)
             _set_hdf5_path(filepath=filepath)
