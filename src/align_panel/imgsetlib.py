@@ -316,7 +316,10 @@ class Imgset:
             aligned image
         """
         if tmat is None:
-            tmat = self.get_data('tmat')
+            try:
+                tmat = self.get_data('tmat')
+            except KeyError:
+                return image
 
         if isinstance(image, np.ndarray):
             img = image
