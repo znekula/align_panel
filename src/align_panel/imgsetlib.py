@@ -62,7 +62,6 @@ class Imgset:
         self.imgset_name = imgset_name 
         f = h5py.File(filename, 'r')
 
-
         # find refernce imageset
         for groupname in list(f.keys()):
             if groupname[0:13] == 'ref_imageset_':
@@ -75,14 +74,28 @@ class Imgset:
                 break
         f.close()
         
-
-
     def get_content(self):
         f=h5py.File(self.filename, 'r')
         group = f[self.imgset_fullname]
         content = list(group.keys())
         f.close()
         return content
+
+    def get_2d_image_keys(self, alignable=True):
+        not_alignable = ['ref', 'img']
+        keys = []
+        f=h5py.File(self.filename, 'r')
+        group = f[self.imgset_fullname]
+        for key, obj in group.items():
+            try:
+                if obj.ndim == 2:
+                    keys.append(key)
+            except AttributeError:
+                pass
+        f.close()
+        if alignable:
+            keys = [k for k in keys if k not in not_alignable]
+        return keys
 
     def get_data(self, dataname:str, stat=False, aligned=False):
         """Get data directly from the h5 file of the imageset.
