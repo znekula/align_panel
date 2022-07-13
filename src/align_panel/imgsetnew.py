@@ -67,17 +67,26 @@ class Imgset_new_holography:
 
         f = h5py.File(filename, "a")
 
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img', data = self.img)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref', data = self.ref)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/amplitude', data = self.amplitude)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/phase', data = self.phase)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary()))   
+        imgset_fullname = prefix + 'imageset_' + imgset_name
+
+        if imgset_fullname in f.keys():
+            raise ValueError(f'Imgset name {imgset_fullname} already exists, '
+                             'change the imageset name')
+
+        f.create_dataset(imgset_fullname+'/img', data = self.img)
+        f.create_dataset(imgset_fullname+'/ref', data = self.ref)
+        f.create_dataset(imgset_fullname+'/amplitude', data = self.amplitude)
+        f.create_dataset(imgset_fullname+'/phase', data = self.phase)
+        f.create_dataset(imgset_fullname+'/unwrapped_phase', data = self.unwrapped_phase)
+        f.create_dataset(imgset_fullname+'/img_metadata', data = str(self.img_meta.as_dictionary()))
+        f.create_dataset(imgset_fullname+'/ref_metadata', data = str(self.ref_meta.as_dictionary()))
+        f.create_dataset(imgset_fullname+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary()))
+        f.create_dataset(imgset_fullname+'/ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary()))   
+        f.create_dataset(imgset_fullname+'/is_static', data = str(self.ref_metaoriginal.as_dictionary()))   
 
         f.close()
+
+        return imgset_fullname
 
 
 class Imgset_new_synchrotron:
