@@ -235,24 +235,15 @@ class Imgset:
 
         tmat = sr.get_matrix()
         return tmat
-        #self.img_aligned = sktransform.warp(img_move, self.tmat)
-        
-        
-        # Save data to h5 file:
 
-        # self.savedata(["tmat"],[self.tmat])
-        # print(">>> saving")
-        # if not keeporiginalsize and self.imageset_kind == "holography":
-        #     datasets = [self.amplitude, self.phase, self.unwrapped_phase]
-        #     count=0
-        #     for dataset in datasets:
-        #         datasets[count] = self.make_same_size(self.amplitude_stat, dataset)
-        #         count+=1
-        #     self.savedata(['amplitude','phase','unwrapped_phase'], datasets)
-        #     # rewrite images in memory
-        #     self.amplitude = datasets[0]
-        #     self.phase = datasets[1]
-        #     self.unwrapped_phase = datasets[2]
+    def get_tmat(self) -> np.ndarray:
+        try:
+            return self.get_data('tmat')
+        except KeyError:
+            return np.eye(3)
+
+    def clear_tmat(self):
+        self.save_tmat(np.eye(3))
     
     def savedata(self, datasets_names:list, datasets_data:list):
         """Save data to the h5 file. dataset_names = list of datasets, for example ["tmat", "unwrapped_phase"]
