@@ -39,9 +39,6 @@ class H5file:
                 self.rest.append(group)
 
 
-
-
-
 class Imgset:
     """loads image set (labeled by order number), and 
     reference image set (labeled defaultly by number 0) from h5  file, and 
@@ -263,57 +260,8 @@ class Imgset:
         finally:  
             f.close()
 
-    def manual_fine(self, img_stat, img_move, initial_transform_matrix=np.identity(3)):
-        """Do manual fine alignment. Runs a server with a GUI for fine alignment. 
-        To kill server, pres ctrl+c into terminal. 
-
-        Parameters
-        ----------
-        img_stat : 2DArray
-            static image
-        img_move : 2DArray
-            moving image
-        initial_transform_matrix : 2DArray, optional
-            initial transformation, by default np.identity(3)
-
-        Returns
-        -------
-        tmat_new : 2DArray
-            new transformation matrix
-        """
-        from align_panel import fine_adjust
-        #make enclosed variable containing the transformation matrix
-        initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix) 
-        layout, fine_getter = fine_adjust(img_stat, img_move, initial_transform = initial_transform)
-        print(">>> to kill server pres ctrl+c into terminal")
-        layout.show(threaded=False)
-        tmat_new = fine_getter()['transform'].params
-        return tmat_new
-
-    def manual_point(self, img_stat, img_move):
-        """Do manual point alignment. Runs a server with a GUI for fine alignment. 
-        To kill server, pres ctrl+c into terminal. 
-
-        Parameters
-        ----------
-        img_stat : 2DArray
-            static image
-        img_move : 2DArray
-            moving image
-        initial_transform_matrix : 2DArray, optional
-            initial transformation, by default np.identity(3)
-
-        Returns
-        -------
-        tmat_new : 2DArray
-            new transformation matrix
-        """
-        from align_panel import point_registration
-        layout, transform_getter = point_registration(img_stat, img_move)
-        print(">>> to kill server pres ctrl+c into terminal")
-        layout.show()
-        tmat_new = transform_getter().get('transform', None).params
-        return tmat_new
+    def save_tmat(self, tmat):
+        self.savedata(['tmat'], [tmat])
 
     def apply_tmat(self, image, tmat=None):
         """ Applies transformation matrix to the image.
