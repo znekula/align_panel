@@ -163,6 +163,10 @@ class Imgset:
                     img[i,j] = value_high            
         return img
 
+    @staticmethod
+    def autoalign_methods():
+        return ['RIGID_BODY', 'TRANSLATION', 'SCALED_ROTATION', 'AFFINE', 'BILINEAR']
+
     def autoalign(self, img_stat, img_move, transformation='RIGID_BODY', roughness=500, del_back=True):
         """Makes autoalignment of selected images, aligning just object without background
         roughnes = roughness of estimation the border betwen object and background. 
