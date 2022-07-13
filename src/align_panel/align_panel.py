@@ -1,3 +1,4 @@
+from __future__ import annotations
 import functools
 import itertools
 from typing import Optional, TYPE_CHECKING
@@ -233,14 +234,11 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     run_button.on_click(_compute_transform)    
 
-    save_checkbox = pn.widgets.Checkbox(name='Save matrix')
-
     layout = SimplePanes()
     layout.panes[0].append(static_fig)
     layout.panes[0].append(pn.Row(static_toolbox))
     layout.panes[0].append(pn.Row(method_select, alpha_slider))
     layout.panes[0].append(pn.Row(run_button, clear_button))
-    layout.panes[0].add_element('save_checkbox',save_checkbox)
 
     layout.panes[1].append(moving_fig)
     layout.panes[1].append(moving_toolbox)
@@ -253,8 +251,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     
     def getter():
         return {'points': transform_points,
-                'transform': transformer_moving.get_combined_transform(),
-                'save': layout.panes[0]['save_checkbox'].value}
+                'transform': transformer_moving.get_combined_transform()}
     
     return layout, getter
 
