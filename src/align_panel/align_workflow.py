@@ -1,198 +1,160 @@
-# this script show basic operations done during image 
-# alignment from the raw data to aligned phase images
-
+from __future__ import annotations
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
-import pathlib
-from functools import partial
-from skimage import transform as sktransform    
+from skimage import transform as sktransform
 import numpy as np
+from typing import TYPE_CHECKING
 
 import panel as pn
 import aperture as ap
 from aperture.layouts.step import Step
-from aperture.utils import loading_context
 
-from .imgsetnew import Imgset_new_holography
-from .imgsetlib import Imgset
-from .align_panel import point_registration, fine_adjust
+from .imgsetlib import Imgset, H5file
+from .align_panel import point_registration, fine_adjust, assure_size, array_format
 
-class LoadStep(Step):
-    @staticmethod
-    def label():
-        return 'Load'
-
-    @staticmethod
-    def title():
-        return 'Load data'
-
-    def pane(self):
-        md = pn.pane.Markdown(object="""
-- Load two sample and reference hologram pairs to align
-- Run the phase reconstruction before continuing
-""", min_width=400)
-        layout = ap.layout(mode='simple')
-        layout.panes[0].append(md)
-
-        static_filepaths = self.get_shared('filepaths', default={'static': {}})['static']
-        moving_filepaths = self.get_shared('filepaths', default={'moving': {}})['moving']
-
-        static_real_input = pn.widgets.TextInput(name='Sample',
-                                                 value=str(static_filepaths.get('sample', '')))
-        static_ref_input = pn.widgets.TextInput(name='Reference',
-                                                value=str(static_filepaths.get('reference', '')))
-        static_load_button = pn.widgets.Button(name='Load')
-        static_recon_button = pn.widgets.Button(name='Reconstruct', disabled=True)
-        static_card = pn.layout.Card(static_real_input,
-                                     static_ref_input,
-                                     static_load_button,
-                                     static_recon_button,
-                                     title='Static holograms',
-                                     collapsible=False)
-        moving_real_input = pn.widgets.TextInput(name='Sample',
-                                                 value=str(moving_filepaths.get('sample', '')))
-        moving_ref_input = pn.widgets.TextInput(name='Reference',
-                                                value=str(moving_filepaths.get('reference', '')))
-        moving_load_button = pn.widgets.Button(name='Load')
-        moving_recon_button = pn.widgets.Button(name='Reconstruct', disabled=True)
-        moving_card = pn.layout.Card(moving_real_input,
-                                     moving_ref_input,
-                                     moving_load_button,
-                                     moving_recon_button,
-                                     title='Moving holograms',
-                                     collapsible=False)
-        layout.panes[0].add_element('static_card', static_card)
-        layout.panes[0].add_element('moving_card', moving_card)
-
-        buttons = [static_load_button,
-                   static_recon_button,
-                   moving_load_button,
-                   moving_recon_button]        
-
-        def _load(event, *, key, real_input, ref_input, recon_button):
-            real_path = real_input.value
-            ref_path = ref_input.value
-            if not pathlib.Path(real_path).resolve().is_file():
-                self.display_error(f'{key} file (sample) {real_path} not found')
-                recon_button.disabled = True
-                return
-            if not pathlib.Path(ref_path).resolve().is_file():
-                self.display_error(f'{key} file (ref) {ref_path} not found')
-                recon_button.disabled = True
-                return
-            with loading_context(*buttons):
-                try:
-                    imgset = Imgset_new_holography(real_path, ref_path)
-                except Exception:
-                    self.display_error('Error loading {key} images')
-                    return
-            self.results.add_child(key, data=imgset)
-            recon_button.disabled = False
-
-        static_load_button.on_click(partial(_load,
-                                            key='static',
-                                            real_input=static_real_input,
-                                            ref_input=static_ref_input,
-                                            recon_button=static_recon_button))
-        moving_load_button.on_click(partial(_load,
-                                            key='moving',
-                                            real_input=moving_real_input,
-                                            ref_input=moving_ref_input,
-                                            recon_button=moving_recon_button))
-
-        def _run_reconstruction(event, *, key):
-            if not isinstance(self.results[key].data, Imgset_new_holography):
-                self.display_error(f'No images loaded for {key}')
-                return
-            with loading_context(*buttons):
-                self.results[key].data.phase_reconstruction()
-
-        static_recon_button.on_click(partial(_run_reconstruction, key='static'))
-        moving_recon_button.on_click(partial(_run_reconstruction, key='moving'))
-
-        output_file_path = str(self.get_shared('hdf5_path', default='output.hdf5'))
-        output_file_input = pn.widgets.TextInput(name='Sample', value=output_file_path)
-        output_save_button = pn.widgets.Button(name='Save HDF5')
-        output_set_button = pn.widgets.Button(name='Set HDF5 path')
-        output_card = pn.layout.Card(output_file_input,
-                                     output_save_button,
-                                     output_set_button, title='Output HDF5', collapsible=False)
-        layout.panes[1].add_element('output_card', output_card)
-
-        initial_md = 'No HDF5 found'
-        if pathlib.Path(output_file_path).is_file():
-            initial_md = f'HDF5: {output_file_path}'
-        output_md = pn.pane.Markdown(object=initial_md, width=500)
-        layout.panes[1].append(output_md)
-
-        def _set_hdf5_path(*args, filepath=None):
-            if filepath is None:
-                filepath = output_file_input.value
-            try:
-                filepath = pathlib.Path(filepath)
-            except Exception:
-                self.display_error('Invalid path format')
-                return
-            if not filepath.is_file():
-                self.display_error('Unable to find {filepath}')
-                return                
-            self.workflow.shared['hdf5_path'] = filepath
-            self.results.set(meta={'hdf5_path': filepath})
-            output_md.object = f'HDF5: {filepath}'
-
-        output_set_button.on_click(_set_hdf5_path)
-
-        def save_output(event):
-            try:
-                filepath = pathlib.Path(output_file_input.value)
-            except Exception:
-                self.display_error('Invalid path format')
-                return
-            if not filepath.suffix == '.h5':
-                self.display_error('Must use .h5 suffix')
-                return
-            try:
-                filepath.parent.mkdir(exist_ok=True, parents=True)
-                assert filepath.parent.is_dir()
-            except (OSError, AssertionError):
-                self.display_error('Unable to create/find output save directory')
-                return
-            if ('static' not in self.results.keys()
-                    or not isinstance(self.results['static'].data, Imgset_new_holography)):
-                self.display_error(f'No images loaded for static')
-                return
-            if ('moving' not in self.results.keys() or 
-                    not isinstance(self.results['moving'].data, Imgset_new_holography)):
-                self.display_error(f'No images loaded for moving')
-                return
-            # would be better to have a Imgset_new_holography.is_valid() method ???
-            self.results['static'].data.save(str(filepath), 0)
-            self.results['moving'].data.save(str(filepath), 1)
-            _set_hdf5_path(filepath=filepath)
-
-
-        output_save_button.on_click(save_output)
-
-        return layout
-
-    def after(self, pane):
-        try:
-            assert pathlib.Path(self.get_shared('hdf5_path')).is_file()
-        except (AssertionError, KeyError, OSError, AttributeError, TypeError):
-            return self.return_error('No valid hdf5 file found, cannot continue')
-        super().after(pane)
+if TYPE_CHECKING:
+    from aperture.layouts.workflow import TemplateWorkflow
+    from aperture.display.figure import BokehFigure
 
 
 class HDF5Step(Step):
-    @staticmethod
-    def img_choices():
-        return {'Amplitude': lambda x: (x.amplitude_stat, x.amplitude),
-                'Phase': lambda x: (x.phase_stat, x.phase),
-                'Phase_Unwrapped': lambda x: (x.unwrapped_phase_stat, x.unwrapped_phase)}
+    # @staticmethod
+    # def img_choices():
+    #     return {'Amplitude': lambda x: (x.amplitude_stat, x.amplitude),
+    #             'Phase': lambda x: (x.phase_stat, x.phase),
+    #             'Phase_Unwrapped': lambda x: (x.unwrapped_phase_stat, x.unwrapped_phase)}
 
-    def load_hdf5(self):
-        hdf5_path = self.get_shared('hdf5_path')
-        return Imgset(hdf5_path, 1)
+    @property
+    def hdf5_path(self):
+        return self.get_shared('hdf5_path')
+
+    def load_hdf5_meta(self):
+        return H5file(self.hdf5_path)
+
+    @property
+    def available_imgsets(self):
+        return self.load_hdf5_meta().imageset_names
+
+    @property
+    def static_key(self):
+        # Implicitly take first reference image
+        return self.load_hdf5_meta().ref_imageset_name[0]
+
+    def get_imgset(self, key) -> Imgset:
+        return Imgset(self.hdf5_path, key)
+
+    def get_static_imgset(self):
+        return self.get_imgset(self.static_key)
+
+    def get_moving_imgset(self):
+        return self.get_imgset(self.moving_key)
+
+    @property
+    def moving_key(self):
+        return self.get_shared('moving_key')
+
+    @moving_key.setter
+    def moving_key(self, value: str):
+        self.workflow.shared['moving_key'] = value
+
+    def imgset_viewer(self,
+                      imgset: Imgset | pn.widgets.Select,
+                      name_prefix=''):
+        img_select = pn.widgets.Select(name=name_prefix + 'Array',
+                                       options=[])
+
+        if isinstance(imgset, pn.widgets.Select):
+            imgset_select = imgset
+            imgset = self.get_imgset(imgset_select.value)
+
+            def _update_options(*events):
+                nonlocal imgset
+                imgset = self.get_imgset(imgset_select.value)
+                img_select.options = imgset.get_2d_image_keys()
+                img_select.param.trigger('value')
+
+            imgset_select.param.watch(_update_options, 'value')
+        
+        img_select.options = imgset.get_2d_image_keys()
+
+        # Display the selected image
+        img = ap.image((400, 400))
+        img.add_colorbar()
+        fig = img.fig
+        fig.set_title(name_prefix + 'Image')
+
+        def _update_image(event):
+            array_key = event.new
+            try:
+                array = imgset.get_data(array_key)
+                if (not array.ndim == 2) or np.iscomplexobj(array.dtype):
+                    raise TypeError
+                img.raw_image = array
+                fig.autorange_images()
+                fig.set_title(name_prefix + array_key)
+            except (KeyError, TypeError):
+                img.clear_data()
+
+        # Change the displayed image each time we select
+        img_select.param.watch(_update_image, 'value')
+        if img_select.options:
+            img_select.param.trigger('value')
+
+        return fig, img_select
+
+
+class ImageSelector(HDF5Step):
+    @staticmethod
+    def label():
+        return 'Select'
+
+    @staticmethod
+    def title():
+        return 'Select images'
+
+    def pane(self):
+        md = pn.pane.Markdown(object="""
+- Choose the moving image from the HDF5 file
+- Inspect the contents of the file
+""", min_width=400)
+        static_key = self.static_key
+        static_key_text = pn.widgets.StaticText(value=f'Static imgset: {static_key}', min_width=300)
+        static_imgset = self.get_static_imgset()
+
+        static_fig, static_select_box = self.imgset_viewer(static_imgset, name_prefix='Static ')
+        static_fig.scale_to_frame_size(frame_height=500)
+
+        imgset_select = pn.widgets.Select(name='Moving imgset',
+                                          options=self.available_imgsets)
+        fig, imgset_array_select = self.imgset_viewer(imgset_select, name_prefix='Moving ')
+        fig.scale_to_frame_size(frame_height=500)
+
+        current_transform_md = pn.pane.Markdown(object='')
+
+        def _update_tmat_display(*event):
+            imgset = self.get_imgset(imgset_select.value)
+            current_tmat = imgset.get_tmat()
+            current_transform_md.object = array_format(current_tmat)
+        
+        _update_tmat_display()
+
+        imgset_select.param.watch(_update_tmat_display, 'value')
+        clear_tmat_btn = pn.widgets.Button(name='Clear Transform')
+
+        def _clear_transform(*event):
+            imgset = self.get_imgset(imgset_select.value)
+            imgset.clear_tmat()
+            _update_tmat_display()
+
+        clear_tmat_btn.on_click(_clear_transform)
+
+        return pn.Row(pn.Column(md, static_key_text, static_select_box, static_fig),
+                      pn.Column(imgset_select, imgset_array_select, fig,
+                                pn.Row(current_transform_md, clear_tmat_btn)))
+    
+    def after(self, pane):
+        self.moving_key = pane[1][0].value
+        super().after(pane)
 
 
 class AutoAlignStep(HDF5Step):
@@ -209,35 +171,50 @@ class AutoAlignStep(HDF5Step):
         layout = ap.layout(mode='simple')
         layout.panes[0].append(md)
 
-        rougness_int_input = pn.widgets.IntInput(name='Rougness',
-                                                 value=1000,
+        rougness_int_input = pn.widgets.IntInput(name='Roughness',
+                                                 value=500,
                                                  start=0)
         del_back_checkbox = pn.widgets.Checkbox(name='Remove background')
 
-        image_choice = pn.widgets.Select(name='Image choice',
-                                         options=[*self.img_choices().keys()])
+        static_arrays = set(self.get_static_imgset().get_2d_image_keys())
+        moving_arrays = set(self.get_moving_imgset().get_2d_image_keys())
+        array_choices = static_arrays.intersection(moving_arrays)
 
-        run_checkbox = pn.widgets.Checkbox(name='Run autoalign')# 
+        image_choice = pn.widgets.Select(name='Image choice',
+                                         options=list(array_choices))
+
+        method_choice = pn.widgets.Select(name='Align method',
+                                          options=Imgset.autoalign_methods())
 
         layout.panes[0].add_element_group('params',
                                           {'rougness_int_input': rougness_int_input,
                                            'del_back_checkbox': del_back_checkbox,
-                                           'image_choice': image_choice,
-                                           'run_checkbox': run_checkbox}, #
+                                           'method_choice': method_choice,
+                                           'image_choice': image_choice}, #
                                            container=pn.layout.Card(title='Parameters'))
         return layout
     
     def after(self, pane):
         roughness = pane.panes[0]['rougness_int_input'].value
         del_back = pane.panes[0]['del_back_checkbox'].value
+        method_choice = pane.panes[0]['method_choice'].value
         img_choice = pane.panes[0]['image_choice'].value
-        run = pane.panes[0]['run_checkbox'].value
-        self.results.set(meta={'img_choice': img_choice})
 
-        if run:
-            imgset = self.load_hdf5()
-            static, moving = self.img_choices()[img_choice](imgset)
-            imgset.autoalign(roughness, del_back=del_back, img_stat=static, img_move=moving)
+        static_imgset = self.get_static_imgset()
+        static_image = static_imgset.get_data(img_choice)
+        moving_imgset = self.get_moving_imgset()
+        moving_image = moving_imgset.get_data(img_choice)
+        try:
+            tmat = moving_imgset.autoalign(static_image,
+                                           assure_size(moving_image, static_image.shape),
+                                           transformation=method_choice,
+                                           roughness=roughness,
+                                           del_back=del_back)
+        except ValueError as e:
+            return self.return_error(str(e))
+
+        self.workflow.shared['temp_tmat'] = tmat
+        self.results.set(data=tmat, meta={'img_choice': img_choice})
         super().after(pane)
 
     @staticmethod
@@ -245,7 +222,83 @@ class AutoAlignStep(HDF5Step):
         return {'img_choice': results.meta['img_choice']}
 
 
-class PointsAlignStep(HDF5Step):
+class ConfirmTransformStep(HDF5Step):
+    @staticmethod
+    def label():
+        return 'Save'
+
+    @staticmethod
+    def title():
+        return 'Save transform'
+
+    def pane(self):
+        md = pn.pane.Markdown(object="""
+- Inspect new transformation matrix
+- Press save to store new transform
+""", min_width=400)
+        layout = ap.layout(mode='simple')
+        layout.panes[0].append(md)
+
+        static_imgset = self.get_static_imgset()
+        fig, img_select = self.imgset_viewer(static_imgset)
+        moving_imgset = self.get_moving_imgset()
+
+        current_tmat = moving_imgset.get_tmat()
+        proposed_tmat = self.get_shared('temp_tmat')[:]
+        combined_tmat = current_tmat @ proposed_tmat
+
+        overlay = fig.add_image(height=400, width=400)
+        overlay_alpha_slider = overlay.get_alpha_slider(0.5)
+        layout.panes[0].append(img_select)
+        layout.panes[0].append(fig)
+        layout.panes[0].append(overlay_alpha_slider)
+
+        def _get_transformed(*event):
+            selected = img_select.value
+            moving = moving_imgset.get_data(selected)
+            transformed = moving_imgset.apply_tmat(moving, tmat=combined_tmat)
+            overlay.raw_image = transformed
+            fig.autorange_images()
+
+        img_select.param.watch(_get_transformed, 'value')
+
+        save_btn = pn.widgets.Button(name='Save transform')
+        save_msg = pn.widgets.StaticText(value='Not yet saved')
+        layout.panes[1].append(save_btn)
+        layout.panes[1].append(save_msg)
+
+        def _apply_transform(*event):
+            current_tmat = moving_imgset.get_tmat()
+            tmat = self.workflow.shared.pop('temp_tmat', None)
+            if tmat is None:
+                # nothing to save
+                return
+            combined_tmat = current_tmat @ proposed_tmat
+            moving_imgset.save_tmat(combined_tmat)
+            save_msg.value = 'Saved transformation matrix'
+
+        save_btn.on_click(_apply_transform)
+
+        return layout
+
+
+class ChosenImagesStep(HDF5Step):
+    def before(self, **kwargs):
+        static_imgset = self.get_static_imgset()
+        moving_imgset = self.get_moving_imgset()
+        img_choice = self.get_result('img_choice', 'unwrapped_phase')
+        img_static = static_imgset.get_data(img_choice, aligned=True)
+        img_moving = moving_imgset.get_data(img_choice, aligned=True)
+        self.results.add_child('static', data=img_static)
+        self.results.add_child('moving', data=assure_size(img_moving, img_static.shape))
+
+    def after(self, pane):
+        self.results.freeze()
+        self.workflow.shared['temp_tmat'] = self.results.data['transform'].params
+        super().after(pane)
+
+
+class PointsAlignStep(ChosenImagesStep):
     @staticmethod
     def label():
         return 'Points'
@@ -254,36 +307,13 @@ class PointsAlignStep(HDF5Step):
     def title():
         return 'Point-based alignment'
 
-    def before(self, **kwargs):
-        imgset = self.load_hdf5()
-        img_choice = self.get_result('img_choice', 'Amplitude')
-        img_static, img_moving = self.img_choices()[img_choice](imgset)
-        self.results.add_child('static', data=img_static)
-        self.results.add_child('moving', data=img_moving)
-
     def pane(self):
-        md = pn.pane.Markdown(object="""
-- Draw points on each image to compute an alignment
-""")
         layout, getter = point_registration(self.results['static'].data, self.results['moving'].data)
         self.results.set(data=lambda **x: getter())
-        self.tmat_point = getter().get('transform', None).params
-        return pn.Column(md, layout.finalize())
-
-    def after(self, pane):
-        self.results.freeze()
-        save = self.results.data['save']
-        if save:
-            imgset = self.load_hdf5()
-            imgset.savedata(['tmat'],[self.tmat_point])
-        super().after(pane)
-
-    @staticmethod
-    def provides(results):
-        return {'points_transform': results.data['transform']}
+        return layout.finalize()
 
 
-class FineAlignStep(HDF5Step):
+class FineAlignStep(ChosenImagesStep):
     @staticmethod
     def label():
         return 'Fine'
@@ -292,44 +322,10 @@ class FineAlignStep(HDF5Step):
     def title():
         return 'Fine-adjust alignment'
 
-    def before(self, **kwargs):
-        imgset = self.load_hdf5()
-        try:
-            initial_transform_matrix = imgset.tmat
-        except:
-            initial_transform_matrix = np.identity(3)
-        self.initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix)
-        img_choice = self.get_result('img_choice', 'Amplitude')
-        img_static, img_moving = self.img_choices()[img_choice](imgset)
-        self.results.add_child('static', data=img_static)
-        self.results.add_child('moving', data=img_moving)
-
     def pane(self):
-        md = pn.pane.Markdown(object="""
-- Adjust alignment by using the arrows and plot tools
-""", min_width=400)
-        layout, getter = fine_adjust(self.results['static'].data, self.results['moving'].data,
-                                     initial_transform=self.initial_transform)
+        layout, getter = fine_adjust(self.results['static'].data, self.results['moving'].data)
         self.results.set(data=lambda **x: getter())
-        layout.insert(0, md)
-        self.tmat_fine = getter().get('transform', None).params
         return layout
-
-    def after(self, pane):
-        self.results.freeze()
-        save = self.results.data['save']
-        if save:
-            imgset = self.load_hdf5()
-            imgset.savedata(['tmat'],[self.tmat_fine])
-
-
-        imgset = self.load_hdf5()
-        imgset.savedata(['tmat'],[self.results.data['transform'].params])
-        super().after(pane)
-
-    @staticmethod
-    def provides(results):
-        return {'fine_transform': results.data['transform']}
 
 
 class FinalPage(Step):
@@ -346,12 +342,16 @@ Results have been saved to {self.get_shared('hdf5_path')}
         return pn.Column(md)
 
 
-def build_workflow(workflow, args=None):
+def build_workflow(workflow: 'TemplateWorkflow', args=None, hdf5_path=None):
     workflow.set_title('Holo-Alignment')
-    workflow.add_step(LoadStep())
+    workflow.set_shared({'hdf5_path': hdf5_path})
+    workflow.add_step(ImageSelector())
     workflow.add_step(AutoAlignStep())
+    workflow.add_step(ConfirmTransformStep(), forward_only=True)
     workflow.add_step(PointsAlignStep())
+    workflow.add_step(ConfirmTransformStep(), forward_only=True)
     workflow.add_step(FineAlignStep())
+    workflow.add_step(ConfirmTransformStep(), forward_only=True)
     workflow.add_step(FinalPage())
     return workflow
 
