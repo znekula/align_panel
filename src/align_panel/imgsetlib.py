@@ -84,7 +84,7 @@ class Imgset:
         f.close()
         return content
 
-    def get_data(self, dataname:str, stat=False):
+    def get_data(self, dataname:str, stat=False, aligned=False):
         """Get data directly from the h5 file of the imageset.
 
         Parameters
@@ -96,6 +96,11 @@ class Imgset:
             True=data from the reference static imageset, 
             False=data from the imageset itself, by default False
         """
+        if aligned:
+            assert not stat
+            assert 'metadata' not in dataname
+            assert 'tmat' not in dataname
+
         f=h5py.File(self.filename, 'r')
         try:
             # choose group as an imageset or a stat. imageset
@@ -112,6 +117,8 @@ class Imgset:
                 data = np.asarray(dset)
         finally:
             f.close()
+        if aligned:
+            return self.apply_tmat(data)
         return data
      
     # define help functions:
