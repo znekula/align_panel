@@ -152,25 +152,49 @@ class Imgset:
         return img_changed
     
     @staticmethod
-    def delete_background(img_original, reduction = 500, value_high = 1, value_low = 0 ):
-        """img is input image
-        reduction means reduction of number of bins in image histogram
-        this function automatically find a treshold to distinguis background and the wire
-        all pixel-values lower than thrashold will be set to value_low
-        all pixel-values higher than thrashold will be set to value_high
-        """    
+    def delete_background(img_original, bins:int = 62, value_high = 1, value_low = 0, deadpix = 0.0005 ):
+        """ 1) sort all pixels of image in 1D array  
+        2) crop the extremes from both sides (hot and dead pixels)  
+        3) split the array into bins, in each is an equal number of pixels
+        4) sum pixel values in each bin and crate histogram
+        5) derivate the histogram
+        6) set thrashold where the derivation has extreme
+        7) to all pixels which are under the trashold is given value = "value_low"
+        8) to all pixels which are in or above the trashold is given value = "value_high"
+        9) this boolean image is then returned
+        
+        Useful for images where object has a strong contrast compare with background.
+        
+        Parameters
+        ==========
+        img_original : 2DArray
+            image where the background should be deleted
+        bins : int
+            number of bins in histogram
+        value_high : float
+            all bright pixels will be set to this value
+        value_low : float
+            all dark pixels will be set to this value
+        deadpix : float
+            percentage of dead pixels in the image
+        """  
+        # flat and sort 2D array into 1D array  
         img = deepcopy(img_original)
         img_1D = img.flatten()
         img_1D_sort = np.sort(img_1D)
-        for i in range(50): #delete extremes
-            img_1D_sort = np.delete(img_1D_sort, 0)
-            img_1D_sort = np.delete(img_1D_sort, -1)
-        reduction = 500
-        img_1D_sort_reduced = np.zeros(int(img_1D_sort.size/reduction))
-        for a in range(int(img_1D_sort.size/reduction)):
-            img_1D_sort_reduced[a] = np.average(img_1D_sort[a*reduction:a*reduction+reduction])
+        # remove hot and dead pixels ... 2/1000 of the pixels
+        pxs_del = int(np.size(img_1D_sort) *deadpix) 
+        img_1D_sort = np.delete(img_1D_sort, np.s_[:pxs_del]) #delete dead pixels
+        img_1D_sort = np.delete(img_1D_sort, np.s_[-pxs_del:]) #delete hot pixels
+        # binpixels is number of pixels in one bin
+        binpixels = int(np.size(img_1D_sort) / bins)
+        img_1D_sort_reduced = np.zeros(int(img_1D_sort.size/binpixels))
+        for a in range(bins):
+            img_1D_sort_reduced[a] = np.average(img_1D_sort[a*binpixels:a*binpixels+binpixels])
+        # do derivation
         derivative = np.convolve(img_1D_sort_reduced,[1,-1],'same')
         derivative[0]=0; derivative[-1]=0
+        # set trashold
         trashold = img_1D_sort_reduced[np.argmax(derivative)]
         for i in range(img[:,0].size):
             for j in range(img[0,:].size):
@@ -178,13 +202,13 @@ class Imgset:
                     img[i,j] = value_low
                 else:
                     img[i,j] = value_high            
-        return img
+        return img # returning the boolean image
 
     @staticmethod
     def autoalign_methods():
         return ['RIGID_BODY', 'TRANSLATION', 'SCALED_ROTATION', 'AFFINE', 'BILINEAR']
 
-    def autoalign(self, img_stat, img_move, transformation='RIGID_BODY', roughness=500, del_back=True):
+    def autoalign(self, img_stat, img_move, transformation='RIGID_BODY', bins=62, del_back=True):
         """Makes autoalignment of selected images, aligning just object without background
         roughnes = roughness of estimation the border betwen object and background. 
         Low roughness estimation can be disrupted by noise.
@@ -195,9 +219,9 @@ class Imgset:
             reference image
         img_move : np2DArray
             moving image
-        roughness : int
-            roughness of estimation the border betwen object and background. 
-            Low roughness estimation can be disrupted by noise.
+        bins : int
+            number of bins while making image histogram to find border between image and background
+            High number of bins can lead to high sensitivity to noise. Recomended number is 62.
         del_back : Boolean
             True = delete background and proceed autoalignment only with boleen images (blakc and white);
             this is only for autoalignment, images are saved with original walues;
@@ -209,8 +233,6 @@ class Imgset:
         ------
         tmat: 2DArray
         """
-        # img_move = self.make_same_size(img_stat, img_move )
-        
         if transformation == 'RIGID_BODY':
             sr = StackReg(StackReg.RIGID_BODY)
         elif transformation == 'TRANSLATION':
@@ -222,9 +244,9 @@ class Imgset:
         elif transformation == 'BILINEAR':
             sr = StackReg(StackReg.BILINEAR)
         
-        if del_back==True:
-            img_stat_noback = self.delete_background(img_stat, roughness)
-            img_move_noback = self.delete_background(img_move, roughness)
+        if del_back is True:
+            img_stat_noback = self.delete_background(img_stat, bins)
+            img_move_noback = self.delete_background(img_move, bins)
             reg = sr.register_transform(img_stat_noback, img_move_noback)
         else:            
             reg = sr.register_transform(img_stat, img_move)
@@ -262,6 +284,58 @@ class Imgset:
 
     def save_tmat(self, tmat):
         self.savedata(['tmat'], [tmat])
+
+    def manual_fine(self, img_stat, img_move, initial_transform_matrix=np.identity(3)):
+        """Do manual fine alignment. Runs a server with a GUI for fine alignment. 
+        To kill server, pres ctrl+c into terminal. 
+
+        Parameters
+        ----------
+        img_stat : 2DArray
+            static image
+        img_move : 2DArray
+            moving image
+        initial_transform_matrix : 2DArray, optional
+            initial transformation, by default np.identity(3)
+
+        Returns
+        -------
+        tmat_new : 2DArray
+            new transformation matrix
+        """
+        from align_panel.align_panel import fine_adjust
+        #make enclosed variable containing the transformation matrix
+        initial_transform = sktransform.AffineTransform(matrix=initial_transform_matrix) 
+        layout, fine_getter = fine_adjust(img_stat, img_move, initial_transform = initial_transform)
+        print(">>> to kill server pres ctrl+c into terminal")
+        layout.show(threaded=False)
+        tmat_new = fine_getter()['transform'].params
+        return tmat_new
+
+    def manual_point(self, img_stat, img_move):
+        """Do manual point alignment. Runs a server with a GUI for fine alignment. 
+        To kill server, pres ctrl+c into terminal. 
+
+        Parameters
+        ----------
+        img_stat : 2DArray
+            static image
+        img_move : 2DArray
+            moving image
+        initial_transform_matrix : 2DArray, optional
+            initial transformation, by default np.identity(3)
+
+        Returns
+        -------
+        tmat_new : 2DArray
+            new transformation matrix
+        """
+        from align_panel.align_panel import point_registration
+        layout, transform_getter = point_registration(img_stat, img_move)
+        print(">>> to kill server pres ctrl+c into terminal")
+        layout.show()
+        tmat_new = transform_getter().get('transform', None).params
+        return tmat_new
 
     def apply_tmat(self, image, tmat=None):
         """ Applies transformation matrix to the image.
