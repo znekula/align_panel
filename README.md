@@ -38,7 +38,7 @@ within the environment into which the package was installed.
 # 3 Examples
 
 Examples are available at:
-<https://github.com/matbryan52/align_panel/tree/master/examples>
+<https://github.com/znekula/align_panel/tree/master/examples>
 
 Recomended logical sequence of examples depends on your usecase:
 ## Electron holography

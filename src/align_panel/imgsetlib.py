@@ -39,9 +39,6 @@ class H5file:
                 self.rest.append(group)
 
 
-
-
-
 class Imgset:
     """loads image set (labeled by order number), and 
     reference image set (labeled defaultly by number 0) from h5  file, and 
@@ -62,7 +59,6 @@ class Imgset:
         self.imgset_name = imgset_name 
         f = h5py.File(filename, 'r')
 
-
         # find refernce imageset
         for groupname in list(f.keys()):
             if groupname[0:13] == 'ref_imageset_':
@@ -75,8 +71,6 @@ class Imgset:
                 break
         f.close()
         
-
-
     def get_content(self):
         f=h5py.File(self.filename, 'r')
         group = f[self.imgset_fullname]
@@ -84,7 +78,23 @@ class Imgset:
         f.close()
         return content
 
-    def get_data(self, dataname:str, stat=False):
+    def get_2d_image_keys(self, alignable=True):
+        not_alignable = ['ref', 'img']
+        keys = []
+        f=h5py.File(self.filename, 'r')
+        group = f[self.imgset_fullname]
+        for key, obj in group.items():
+            try:
+                if obj.ndim == 2:
+                    keys.append(key)
+            except AttributeError:
+                pass
+        f.close()
+        if alignable:
+            keys = [k for k in keys if k not in not_alignable]
+        return keys
+
+    def get_data(self, dataname:str, stat=False, aligned=False):
         """Get data directly from the h5 file of the imageset.
 
         Parameters
@@ -96,6 +106,11 @@ class Imgset:
             True=data from the reference static imageset, 
             False=data from the imageset itself, by default False
         """
+        if aligned:
+            assert not stat
+            assert 'metadata' not in dataname
+            assert 'tmat' not in dataname
+
         f=h5py.File(self.filename, 'r')
         try:
             # choose group as an imageset or a stat. imageset
@@ -112,6 +127,8 @@ class Imgset:
                 data = np.asarray(dset)
         finally:
             f.close()
+        if aligned:
+            return self.apply_tmat(data)
         return data
      
     # define help functions:
@@ -187,6 +204,10 @@ class Imgset:
                     img[i,j] = value_high            
         return img # returning the boolean image
 
+    @staticmethod
+    def autoalign_methods():
+        return ['RIGID_BODY', 'TRANSLATION', 'SCALED_ROTATION', 'AFFINE', 'BILINEAR']
+
     def autoalign(self, img_stat, img_move, transformation='RIGID_BODY', bins=62, del_back=True):
         """Makes autoalignment of selected images, aligning just object without background
         roughnes = roughness of estimation the border betwen object and background. 
@@ -234,6 +255,14 @@ class Imgset:
         tmat = sr.get_matrix()
         return tmat
 
+    def get_tmat(self) -> np.ndarray:
+        try:
+            return self.get_data('tmat')
+        except KeyError:
+            return np.eye(3)
+
+    def clear_tmat(self):
+        self.save_tmat(np.eye(3))
     
     def savedata(self, datasets_names:list, datasets_data:list):
         """Save data to the h5 file. dataset_names = list of datasets, for example ["tmat", "unwrapped_phase"]
@@ -252,6 +281,9 @@ class Imgset:
                 count +=1     
         finally:  
             f.close()
+
+    def save_tmat(self, tmat):
+        self.savedata(['tmat'], [tmat])
 
     def manual_fine(self, img_stat, img_move, initial_transform_matrix=np.identity(3)):
         """Do manual fine alignment. Runs a server with a GUI for fine alignment. 
@@ -321,7 +353,10 @@ class Imgset:
             aligned image
         """
         if tmat is None:
-            tmat = self.get_data('tmat')
+            try:
+                tmat = self.get_data('tmat')
+            except KeyError:
+                return image
 
         if isinstance(image, np.ndarray):
             img = image

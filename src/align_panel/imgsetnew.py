@@ -94,8 +94,10 @@ class Imgset_new_holography:
             prefix = 'ord_'
 
         f = h5py.File(filename, "a")
+        imgset_fullname = prefix + 'imageset_' + imgset_name
+
         try:
-            group = f.create_group(prefix + 'imageset_' + imgset_name)
+            group = f.create_group(imgset_fullname)
             group.attrs['img_shape']= np.shape(self.img)
             group.create_dataset('img', data = self.img)
             group.create_dataset('ref', data = self.ref)
@@ -108,6 +110,8 @@ class Imgset_new_holography:
             group.create_dataset('ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary())) 
         finally:
             f.close()
+
+        return imgset_fullname
 
 
 class Imgset_new_synchrotron:
