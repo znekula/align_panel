@@ -171,10 +171,11 @@ class AutoAlignStep(HDF5Step):
         layout = ap.layout(mode='simple')
         layout.panes[0].append(md)
 
-        rougness_int_input = pn.widgets.IntInput(name='Roughness',
-                                                 value=500,
-                                                 start=0)
-        del_back_checkbox = pn.widgets.Checkbox(name='Remove background')
+        bins_int_input = pn.widgets.IntInput(name='Bins',
+                                             value=62,
+                                             start=1)
+        del_back_checkbox = pn.widgets.Checkbox(name='Remove background',
+                                                value=True)
 
         static_arrays = set(self.get_static_imgset().get_2d_image_keys())
         moving_arrays = set(self.get_moving_imgset().get_2d_image_keys())
@@ -187,7 +188,7 @@ class AutoAlignStep(HDF5Step):
                                           options=Imgset.autoalign_methods())
 
         layout.panes[0].add_element_group('params',
-                                          {'rougness_int_input': rougness_int_input,
+                                          {'bins_int_input': bins_int_input,
                                            'del_back_checkbox': del_back_checkbox,
                                            'method_choice': method_choice,
                                            'image_choice': image_choice}, #
@@ -195,7 +196,7 @@ class AutoAlignStep(HDF5Step):
         return layout
     
     def after(self, pane):
-        roughness = pane.panes[0]['rougness_int_input'].value
+        bins = pane.panes[0]['bins_int_input'].value
         del_back = pane.panes[0]['del_back_checkbox'].value
         method_choice = pane.panes[0]['method_choice'].value
         img_choice = pane.panes[0]['image_choice'].value
@@ -208,7 +209,7 @@ class AutoAlignStep(HDF5Step):
             tmat = moving_imgset.autoalign(static_image,
                                            assure_size(moving_image, static_image.shape),
                                            transformation=method_choice,
-                                           roughness=roughness,
+                                           bins=bins,
                                            del_back=del_back)
         except ValueError as e:
             return self.return_error(str(e))
