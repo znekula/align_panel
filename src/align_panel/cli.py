@@ -52,9 +52,14 @@ def main():
 
 
 def launch_align_workflow(args):
-    from .align_workflow import build_workflow
+    from .imgsetlib import H5file
     hdf5_path = as_path(args.hdf5_path, exists=True)
     check_is_hdf5(hdf5_path)
+    file_obj = H5file(hdf5_path)
+    assert file_obj.ref_imageset_name, 'Must have at least one static imgset in hdf5 file'
+    assert file_obj.imageset_names, 'Must have at least one moving imgset in hdf5 file'
+
+    from .align_workflow import build_workflow
     launch_external(build_workflow, build_kwargs=dict(hdf5_path=hdf5_path))
 
 
