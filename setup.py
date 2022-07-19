@@ -26,7 +26,7 @@ setup(
     long_description='''
 Package to align images in HDF5 format
 ''',
-    url="https://github.com/matbryan52/align_panel",
+    url="https://github.com/znekula/align_panel",
     author="Zdeněk Nekula, Matthew Bryan",
     keywords="electron holography, image alignment",
     classifiers=[
