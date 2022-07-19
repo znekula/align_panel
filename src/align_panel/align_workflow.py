@@ -76,9 +76,10 @@ class HDF5Step(Step):
             imgset_select.param.watch(_update_options, 'value')
         
         img_select.options = imgset.get_2d_image_keys()
+        img_size = imgset.get_image_size()
 
         # Display the selected image
-        img = ap.image((400, 400))
+        img = ap.image(img_size)
         img.add_colorbar()
         fig = img.fig
         fig.set_title(name_prefix + 'Image')
@@ -248,7 +249,8 @@ class ConfirmTransformStep(HDF5Step):
         proposed_tmat = self.get_shared('temp_tmat')[:]
         combined_tmat = current_tmat @ proposed_tmat
 
-        overlay = fig.add_image(height=400, width=400)
+        img_size = static_imgset.get_image_size()
+        overlay = fig.add_image(height=img_size[0], width=img_size[1])
         overlay_alpha_slider = overlay.get_alpha_slider(0.5)
         layout.panes[0].append(img_select)
         layout.panes[0].append(fig)

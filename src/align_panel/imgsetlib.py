@@ -78,6 +78,13 @@ class Imgset:
         f.close()
         return content
 
+    def get_image_size(self):
+        keys = self.get_2d_image_keys()
+        if not keys:
+            return (256, 256)
+        else:
+            return h5py.File(self.filename, 'r')[self.imgset_fullname][keys[0]].shape
+
     def get_2d_image_keys(self, alignable=True):
         not_alignable = ['ref', 'img']
         keys = []
