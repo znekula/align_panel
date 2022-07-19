@@ -143,6 +143,7 @@ autocorr_udf/
 test_data/
 test*
 *.ipynb
+t_*.py
 # folders
 testingplace.py
 notebooks/

@@ -3,6 +3,7 @@
 
 import hyperspy.api as hs
 import h5py
+import numpy as np
 
 
 class Imgset_new_holography:
@@ -36,8 +37,12 @@ class Imgset_new_holography:
         sb_size = self.ref_raw.estimate_sideband_size(sb_position)
         
         # Reconstruction"""
+        # wave = self.img_raw.reconstruct_phase(self.ref_raw, sb_position=sb_position, sb_size=sb_size,
+        #                         output_shape=(int(sb_size.data*2), int(sb_size.data*2)))
         wave = self.img_raw.reconstruct_phase(self.ref_raw, sb_position=sb_position, sb_size=sb_size,
-                                output_shape=(int(sb_size.data*2), int(sb_size.data*2)))
+                                output_shape=np.shape(self.img))
+
+
         # Reconstructed images"""
         self.real = wave.real.data
         self.imag = wave.imag.data
@@ -60,24 +65,49 @@ class Imgset_new_holography:
             False = just an ordinary imageset, supposed to be aligned according to another reference-imageset.
             In an h5 file can be only one reference imgageset.
         """
+        # check what is allready inside of the h5 file
+        f = h5py.File(filename, 'a')
+        try:
+            groups = list(f.keys())
+            img_shape_identical = True
+            img_shape = np.shape(self.img)
+            ref_imgsets = 0
+            for groupfullname in groups:
+                if any(img_shape != f[groupfullname].attrs['img_shape']):
+                    img_shape_identical = False
+                parts = groupfullname.split('_', 1)
+                if parts[0] == 'ref':
+                    ref_imgsets +=1
+        finally:
+            f.close()
+        # Check if the data to save are compatible with the file
+        if ref_imgsets > 1:
+            raise Exception("Error: file allready contains more than 1 reference imagesets. Maximum 1 is allowed. Delete one of them or create a new file.")
+        elif ref_imgsets ==1 and imgset_ref is True:
+            raise Exception("Error: file allready contains 1 reference imageset. Maximum 1 is allowed. Change your command to save the imageset as an ordinary")
+        elif img_shape_identical == False:
+            raise Exception("Error: The shape of the image different than images inside of the file. Change the shape of the image.")
+
         if imgset_ref:
             prefix = 'ref_'
         else:
             prefix = 'ord_'
 
         f = h5py.File(filename, "a")
-
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img', data = self.img)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref', data = self.ref)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/amplitude', data = self.amplitude)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/phase', data = self.phase)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/unwrapped_phase', data = self.unwrapped_phase)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadata', data = str(self.ref_meta.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary()))
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary()))   
-
-        f.close()
+        try:
+            group = f.create_group(prefix + 'imageset_' + imgset_name)
+            group.attrs['img_shape']= np.shape(self.img)
+            group.create_dataset('img', data = self.img)
+            group.create_dataset('ref', data = self.ref)
+            group.create_dataset('amplitude', data = self.amplitude)
+            group.create_dataset('phase', data = self.phase)
+            group.create_dataset('unwrapped_phase', data = self.unwrapped_phase)
+            group.create_dataset('img_metadata', data = str(self.img_meta.as_dictionary()))
+            group.create_dataset('ref_metadata', data = str(self.ref_meta.as_dictionary()))
+            group.create_dataset('img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary()))
+            group.create_dataset('ref_metadataoriginal', data = str(self.ref_metaoriginal.as_dictionary())) 
+        finally:
+            f.close()
 
 
 class Imgset_new_synchrotron:
@@ -110,13 +140,41 @@ class Imgset_new_synchrotron:
             False = just an ordinary imageset, supposed to be aligned according to another reference-imageset.
             In an h5 file can be only one reference imgageset.
         """
+        # check what is allready inside of the h5 file
+        f = h5py.File(filename, 'a')
+        try:
+            groups = list(f.keys())
+            img_shape_identical = True
+            img_shape = np.shape(self.img)
+            ref_imgsets = 0
+            for groupfullname in groups:
+                if any(img_shape != f[groupfullname].attrs['img_shape']):
+                    img_shape_identical = False
+                parts = groupfullname.split('_', 1)
+                if parts[0] == 'ref':
+                    ref_imgsets +=1
+        finally:
+            f.close()
+        # Check if the data to save are compatible with the file
+        if ref_imgsets > 1:
+            raise Exception("Error: file allready contains more than 1 reference imagesets. Maximum 1 is allowed. Delete one of them or create a new file.")
+        elif ref_imgsets ==1 and imgset_ref is True:
+            raise Exception("Error: file allready contains 1 reference imageset. Maximum 1 is allowed. Change your command to save the imageset as an ordinary")
+        elif img_shape_identical == False:
+            raise Exception("Error: The shape of the image different than images inside of the file. Change the shape of the image.")
+
+        # choose prefix
         if imgset_ref:
             prefix = 'ref_'
         else:
             prefix = 'ord_'
-
+        # save data
         f = h5py.File(filename, "a")
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img', data = self.img)
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadata', data = str(self.img_meta.as_dictionary()))    
-        f.create_dataset(prefix + 'imageset_' + imgset_name+'/img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary())) 
-        f.close()
+        try:
+            group = f.create_group(prefix + 'imageset_' + imgset_name)
+            group.attrs['img_shape']= np.shape(self.img)
+            group.create_dataset('img', data = self.img)
+            group.create_dataset('img_metadata', data = str(self.img_meta.as_dictionary()))    
+            group.create_dataset('img_metadataoriginal', data = str(self.img_metaoriginal.as_dictionary())) 
+        finally:
+            f.close()
