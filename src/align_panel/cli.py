@@ -30,7 +30,8 @@ def main():
     parser_load.add_argument('file_path',
                              type=str,
                              help='The data to load into the hdf5')
-    parser_load.add_argument('imgset_name',
+    parser_load.add_argument('-n',
+                             '--name',
                              type=str,
                              help='The name to give to this imageset in the HDF5')
     parser_load.add_argument('-r',
@@ -96,7 +97,12 @@ def load_or_create_hdf5(args):
     if ref_path is not None:
         ref_path = as_path(args.ref, exists=True)
     is_static = args.static
-    imgset_name = args.imgset_name
+
+    if args.name is not None:
+        imgset_name = args.name
+    else:
+        imgset_name = file_path.name
+    assert imgset_name
 
     if '/' in imgset_name:
         raise ValueError('Cannot use imgset names with / characters '
