@@ -1,6 +1,5 @@
 import argparse
 import pathlib
-from aperture.cli import launch_external
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,17 +12,12 @@ def main():
     subparsers = parser.add_subparsers(title='subcommands',
                                        description='valid subcommands',
                                        required=True)
-    
-    # create the parser for the launch command
-    parser_launch = subparsers.add_parser('launch', help='Launch the alignment workflow')
-    parser_launch.set_defaults(func=launch_align_workflow)
-    parser_launch.add_argument('hdf5_path', type=str, help='The HDF5 path to launch with')
-    
+
     # create the parser for the load command
     parser_load = subparsers.add_parser('load',
                                         help='Load files into an HDF5 container')
     parser_load.set_defaults(func=load_or_create_hdf5)
-    
+
     parser_load.add_argument('hdf5_path',
                              type=str,
                              help='The HDF5 path to load data into')
@@ -46,22 +40,10 @@ def main():
     # create the parser for the inspect command
     parser_inspect = subparsers.add_parser('inspect', help='List the contents of an HDF5 file')
     parser_inspect.set_defaults(func=inspect_hdf5)
-    parser_inspect.add_argument('hdf5_path', type=str, help='The HDF5 path to inspect')                             
+    parser_inspect.add_argument('hdf5_path', type=str, help='The HDF5 path to inspect')
 
     args = parser.parse_args()
     args.func(args)
-
-
-def launch_align_workflow(args):
-    from .imgsetlib import H5file
-    hdf5_path = as_path(args.hdf5_path, exists=True)
-    check_is_hdf5(hdf5_path)
-    file_obj = H5file(hdf5_path)
-    assert file_obj.ref_imageset_name, 'Must have at least one static imgset in hdf5 file'
-    assert file_obj.imageset_names, 'Must have at least one moving imgset in hdf5 file'
-
-    from .align_workflow import build_workflow
-    launch_external(build_workflow, build_kwargs=dict(hdf5_path=hdf5_path))
 
 
 def as_path(str_path: str, exists=False) -> pathlib.Path:
@@ -78,7 +60,7 @@ def as_path(str_path: str, exists=False) -> pathlib.Path:
 
 def check_is_hdf5(path: pathlib.Path):
     hdf5_suffixes = ('.h5', '.hdf5')
-    if not path.suffix in hdf5_suffixes:
+    if path.suffix not in hdf5_suffixes:
         raise TypeError(f'Must use suffix in {hdf5_suffixes} for hdf5 files')
     return True
 
@@ -109,12 +91,12 @@ def load_or_create_hdf5(args):
                          'as this breaks the HDF5 tree structure')
 
     if ref_path is not None:
-        logger.info(f'Interpreting data as hologram with reference')
+        logger.info('Interpreting data as hologram with reference')
         imgset = Imgset_new_holography(file_path, ref_path)
-        logger.info(f'Performing phase reconstruction')
+        logger.info('Performing phase reconstruction')
         imgset.phase_reconstruction()
     else:
-        logger.info(f'Interpreting data as synchrotron format (no reference)')
+        logger.info('Interpreting data as synchrotron format (no reference)')
         imgset = Imgset_new_synchrotron(file_path)
 
     imgset_fullname = imgset.save(hdf5_path, imgset_name, imgset_ref=is_static)
@@ -128,11 +110,11 @@ def inspect_hdf5(args):
     mydatafile = H5file(hdf5_path)
 
     # Print all imagesets inside the h5 file
-    print ("\nthis is the content:")
-    print ("reference imageset name: " + str(mydatafile.ref_imageset_name))
-    print ("imagesets names: " + str(mydatafile.imageset_names))
-    print ("the rest: " + str(mydatafile.rest))
+    print("\nthis is the content:")
+    print("reference imageset name: " + str(mydatafile.ref_imageset_name))
+    print("imagesets names: " + str(mydatafile.imageset_names))
+    print("the rest: " + str(mydatafile.rest))
 
-    print ("\nHere are the full names of imagesets:")
-    print ("reference imageset full name: " + str(mydatafile.ref_imageset_fullname))
-    print ("imagesets full names: " + str(mydatafile.imageset_fullnames) + '\n')
+    print("\nHere are the full names of imagesets:")
+    print("reference imageset full name: " + str(mydatafile.ref_imageset_fullname))
+    print("imagesets full names: " + str(mydatafile.imageset_fullnames) + '\n')
