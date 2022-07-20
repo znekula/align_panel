@@ -35,12 +35,12 @@ def get_base_figure(array: np.ndarray, name: str):
     -------
     _type_
         _description_
-    """    
+    """
     figure = BokehFigure()
     figure.set_title(name)
     image = figure.add_image(array=array, name=f'{name} image')
     return figure, image
-    
+
 
 def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, initial_points=None):
     """
@@ -52,7 +52,7 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
     support this yet and will be upgraded to do so in the future.
     """
     color_iterator = itertools.cycle(get_bokeh_palette())
-    
+
     defaults = {'cx': -10000,
                 'cy': -10000,
                 'moving_cx': -10000,
@@ -102,11 +102,11 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
         valid_point_patches = {k: v for k, v in [cx_patches, cy_patches, moving_cx_patches, moving_cy_patches] if v}
         patches.update(valid_point_patches)
         static_pointset.cds.patch(patches)
-    
+
     static_pointset.cds.on_change('data', _sync_points)
 
     return static_pointset, moving_pointset
-    
+
 
 def array_format(array: np.ndarray, header='Transformation matrix:'):
     """
@@ -123,8 +123,8 @@ def array_format(array: np.ndarray, header='Transformation matrix:'):
     return f'''
 {header}
 ```
-{substrings[0]}  
-{substrings[1]}  
+{substrings[0]}
+{substrings[1]}
 {substrings[2]}
 ```'''
 
