@@ -35,7 +35,7 @@ class ImageTransformer:
         self.transforms.append(self._null_transform())
         self._reshapes.append(output_shape)
         if frozen:
-            self._frozen_len = len(self.transforms)        
+            self._frozen_len = len(self.transforms)
 
     def remove_transform(self, n=1):
         for _ in range(n):
@@ -114,7 +114,7 @@ class ImageTransformer:
             if rotation_rad == 0.:
                 return
             raise ValueError('Must specify one of degrees or radians')
-        
+
         transform = sktransform.EuclideanTransform(rotation=rotation_rad)
         self._operation_with_origin(point_yx, transform)
 
@@ -146,7 +146,8 @@ class ImageTransformer:
         """The transformation types which can be estimated, compatible with this class"""
         return ['affine', 'euclidean', 'similarity', 'projective']
 
-    def estimate_transform(self, static_points, moving_points, method='affine', output_shape=None, clear=False):
+    def estimate_transform(self, static_points, moving_points,
+                           method='affine', output_shape=None, clear=False):
         assert method in self.available_transforms()
         assert static_points.size and moving_points.size, 'Need points to match'
         assert static_points.size == moving_points.size, 'Must supply matching pointsets'

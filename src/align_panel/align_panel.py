@@ -35,12 +35,12 @@ def get_base_figure(array: np.ndarray, name: str):
     -------
     _type_
         _description_
-    """    
+    """
     figure = BokehFigure()
     figure.set_title(name)
     image = figure.add_image(array=array, name=f'{name} image')
     return figure, image
-    
+
 
 def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, initial_points=None):
     """
@@ -52,7 +52,7 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
     support this yet and will be upgraded to do so in the future.
     """
     color_iterator = itertools.cycle(get_bokeh_palette())
-    
+
     defaults = {'cx': -10000,
                 'cy': -10000,
                 'moving_cx': -10000,
@@ -89,24 +89,34 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
         if not new['cx'] or len(old['cx']) == len(new['cx']):
             return
         # Use the color as a proxy to recognize which points are new
-        to_patch_ix = [i for i, c in enumerate(new['color']) if c in [defaults['color'], default_fill]]
+        to_patch_ix = [i for i, c in enumerate(new['color']) if c in [defaults['color'],
+                                                                      default_fill]]
         # Exit early if no points are new, this is the case for point deletion
         if not to_patch_ix:
             return
 
         patches = {'color': [(i, next(color_iterator)) for i in to_patch_ix]}
-        cx_patches = 'cx', [(i, new['moving_cx'][i]) for i in to_patch_ix if new['cx'][i] in [defaults['cx'], default_fill]]
-        cy_patches = 'cy', [(i, new['moving_cy'][i]) for i in to_patch_ix if new['cy'][i] in [defaults['cy'], default_fill]]
-        moving_cx_patches = 'moving_cx', [(i, new['cx'][i]) for i in to_patch_ix if new['moving_cx'][i] in [defaults['moving_cx'], default_fill]]
-        moving_cy_patches = 'moving_cy', [(i, new['cy'][i]) for i in to_patch_ix if new['moving_cy'][i] in [defaults['moving_cy'], default_fill]]
-        valid_point_patches = {k: v for k, v in [cx_patches, cy_patches, moving_cx_patches, moving_cy_patches] if v}
+        cx_patches = 'cx', [(i, new['moving_cx'][i]) for i in to_patch_ix
+                            if new['cx'][i] in [defaults['cx'], default_fill]]
+        cy_patches = 'cy', [(i, new['moving_cy'][i]) for i in to_patch_ix
+                            if new['cy'][i] in [defaults['cy'], default_fill]]
+        moving_cx_patches = 'moving_cx', [(i, new['cx'][i]) for i in to_patch_ix
+                                          if new['moving_cx'][i] in [defaults['moving_cx'],
+                                                                     default_fill]]
+        moving_cy_patches = 'moving_cy', [(i, new['cy'][i]) for i in to_patch_ix
+                                          if new['moving_cy'][i] in [defaults['moving_cy'],
+                                                                     default_fill]]
+        valid_point_patches = {k: v for k, v in [cx_patches,
+                                                 cy_patches,
+                                                 moving_cx_patches,
+                                                 moving_cy_patches] if v}
         patches.update(valid_point_patches)
         static_pointset.cds.patch(patches)
-    
+
     static_pointset.cds.on_change('data', _sync_points)
 
     return static_pointset, moving_pointset
-    
+
 
 def array_format(array: np.ndarray, header='Transformation matrix:'):
     """
@@ -123,8 +133,8 @@ def array_format(array: np.ndarray, header='Transformation matrix:'):
     return f'''
 {header}
 ```
-{substrings[0]}  
-{substrings[1]}  
+{substrings[0]}
+{substrings[1]}
 {substrings[2]}
 ```'''
 
@@ -144,7 +154,9 @@ def assure_size(array: np.ndarray, target_shape: tuple[int, int]):
     return canvas
 
 
-def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: Optional['pd.DataFrame'] = None):
+def point_registration(static: np.ndarray,
+                       moving: np.ndarray,
+                       initial_points: Optional['pd.DataFrame'] = None):
     """
     Provides a UI panel for pointset-to-pointset image registration
     from the moving image onto the static image
@@ -157,12 +169,14 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     static_fig, static_im = get_base_figure(static, 'Static')
     static_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
-    overlay_image = static_fig.add_image(array=assure_size(moving, static.shape), name='Overlay image')
+    overlay_image = static_fig.add_image(array=assure_size(moving, static.shape),
+                                         name='Overlay image')
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im = get_base_figure(moving, 'Moving')
     moving_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
-    static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig, initial_points=initial_points)
-       
+    static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig,
+                                                          initial_points=initial_points)
+
     transformations = {s.title(): s for s in ImageTransformer.available_transforms()}
     method_select = pn.widgets.Select(name='Transformation type',
                                       options=[*transformations.keys()],
@@ -182,7 +196,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
     zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     zero_fig.set_title('Difference')
-    
+
     async def _clear(event):
         static_pointset.clear_data()
         pn.io.push_notebook(static_fig, moving_fig)
@@ -190,12 +204,15 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     clear_button.on_click(_clear)
 
     transform_points = None
+
     async def _compute_transform(event):
         nonlocal transform_points
 
         method = transformations[method_select.value]
-        static_points = static_pointset.export_data()[['cx', 'cy']].to_numpy().reshape(-1, 2)
-        moving_points = moving_pointset.export_data()[['moving_cx', 'moving_cy']].to_numpy().reshape(-1, 2)
+        static_points = static_pointset.export_data()[['cx', 'cy']]
+        static_points = static_points.to_numpy().reshape(-1, 2)
+        moving_points = moving_pointset.export_data()[['moving_cx', 'moving_cy']]
+        moving_points = moving_points.to_numpy().reshape(-1, 2)
         transform_points = static_pointset.export_data()
         ns = static_points.shape[0]
         nm = moving_points.shape[0]
@@ -203,7 +220,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
             output_md.object = f'Mismatching number of points - static: {ns}, moving: {nm}'
             return
         elif ns == 0:
-            output_md.object = f'No points defined'
+            output_md.object = 'No points defined'
             return
         try:
             transform = transformer_moving.estimate_transform(static_points,
@@ -216,20 +233,20 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
         try:
             output_md.object = array_format(transform.params)
         except Exception as e:
-            output_md.object = f'Post-transform error (format?)'
+            output_md.object = 'Post-transform error (format?)'
             return
-            
-        warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
-        overlay_image.update_raw_image(warped_moving, fix_clims=True)#change
 
-        overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)#change
+        warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
+        overlay_image.update_raw_image(warped_moving, fix_clims=True)
+
+        overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)
         pn.io.push_notebook(static_fig, zero_fig)
 
-    static_toolbox = static_fig.get_toolbox(name=f'Static toolbox')
-    moving_toolbox = moving_fig.get_toolbox(name=f'Moving toolbox')
-    zero_toolbox = zero_fig.get_toolbox(name=f'Difference toolbox')
+    static_toolbox = static_fig.get_toolbox(name='Static toolbox')
+    moving_toolbox = moving_fig.get_toolbox(name='Moving toolbox')
+    zero_toolbox = zero_fig.get_toolbox(name='Difference toolbox')
 
-    run_button.on_click(_compute_transform)    
+    run_button.on_click(_compute_transform)
 
     layout = SimplePanes()
     layout.panes[0].append(static_fig)
@@ -242,11 +259,11 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     layout.panes[1].append(pn.Row(moving_toolbox, zero_toolbox))
     layout.panes[1].append(zero_fig)
     layout.finalize()
-    
+
     def getter():
         return {'points': transform_points,
                 'transform': transformer_moving.get_combined_transform()}
-    
+
     return layout, getter
 
 
@@ -285,19 +302,40 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                                alpha=0.5,
                                                max_width=200)
     toolbox = fig.get_toolbox(name='Image tools')
+    static_toolbox, moving_toolbox = toolbox[0], toolbox[1]
+    static_toolbox.collapsed = False
+    moving_toolbox.collapsed = False
+
+    show_diff_cbox = pn.widgets.Checkbox(name='Show image difference',
+                                         value=False,
+                                         align='end')
 
     translate_step_input = pn.widgets.FloatInput(name='Translate step (px):',
                                                  value=1.,
                                                  start=0.1,
                                                  end=100.,
                                                  width=125)
-    
-    def update_moving_sync():
-        moving_im.update_raw_image(transformer_moving.get_transformed_image(), fix_clims=True)
-        pn.io.push_notebook(fig)
-    
+
+    def update_moving_sync(*updates, fix_clims=True):
+        moving = transformer_moving.get_transformed_image()
+        if show_diff_cbox.value:
+            to_display = moving - static
+        else:
+            to_display = moving
+        moving_im.update_raw_image(to_display, fix_clims=fix_clims)
+        pn.io.push_notebook(fig, *updates)
+
     async def update_moving():
         update_moving_sync()
+
+    async def switch_diff_image(event):
+        if event.new:
+            overlay_alpha.value = 1.
+        else:
+            overlay_alpha.value = 0.5
+        update_moving_sync(fix_clims=False)
+
+    show_diff_cbox.param.watch(switch_diff_image, 'value')
 
     async def fine_translate(event, x=0, y=0):
         if not x and not y:
@@ -339,7 +377,6 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
             transformer_moving.rotate_about_point((cy, cx), rotation_degrees=true_rotate)
         await update_moving()
 
-
     scale_step_input = pn.widgets.FloatInput(name='Scale step (%):',
                                              value=1.,
                                              start=0.1,
@@ -359,7 +396,6 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
             cx, cy = origin_cursor.get_posxy()
             transformer_moving.xy_scale_about_point((cy, cx), xscale=xscale, yscale=yscale)
         await update_moving()
-
 
     def translate_from_path(path_dict):
         xs = path_dict['xs']
@@ -384,10 +420,9 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     def getter():
         return {
             'transform': transformer_moving.get_combined_transform(),
-            }
+        }
 
-    
-    return pn.Column(overlay_alpha,
+    return pn.Column(pn.Row(overlay_alpha, show_diff_cbox),
                      pn.Row(fig, pn.Column(translate_step_input,
                                            translate_buttons(fine_translate),
                                            about_center_cbox,
@@ -397,7 +432,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                            scale_buttons(fine_scale),
                                            pn.Spacer(width=40, height=40),
                                            undo_button)),
-                    pn.Row(toolbox[0], toolbox[1])), getter
+                     pn.Row(static_toolbox, moving_toolbox)), getter
 
 
 # Unicode arrow codes used for defining UI buttons
