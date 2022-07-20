@@ -43,10 +43,9 @@ Examples are available at:
 Recomended logical sequence of examples depends on your usecase:
 ## Electron holography
 1) example_new_holography  --> load raw images, do phase reconstruction, save them into a new hdf5 file
-2) example_samesize  --> check if all images have the same shape (same number of pixels), if not, it will modify them
-3) example_alignment_holography  --> align images automatically and manually
-4) example_h5file_explore  --> show what is inside of the newly created hdf5 file
-5) example_imageset_explore_holography  --> show results and data
+2) example_alignment_holography  --> align images automatically and manually
+3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
+4) example_imageset_explore_holography  --> show results and data
 
 ## Synchrotron
 1) example_new_synchrotron  --> load raw images and save them into a new hdf5 file
