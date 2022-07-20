@@ -5,7 +5,7 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 import panel as pn
 
-from aperture.utils.notebook_tools import is_notebook
+import aperture as ap
 from aperture.display.figure import BokehFigure
 from aperture.display.utils.colormaps import get_bokeh_palette
 from aperture.layouts.panes import SimplePanes
@@ -38,7 +38,7 @@ def get_base_figure(array: np.ndarray, name: str):
     """    
     figure = BokehFigure()
     figure.set_title(name)
-    image = figure.add_image(array=array)
+    image = figure.add_image(array=array, name=f'{name} image')
     return figure, image
     
 
@@ -108,7 +108,7 @@ def get_joint_pointset(static_figure: BokehFigure, moving_figure: BokehFigure, i
     return static_pointset, moving_pointset
     
 
-def array_format(array: np.ndarray):
+def array_format(array: np.ndarray, header='Transformation matrix:'):
     """
     Format a 3x3 array nicely as a Markdown string
     This is quite hacky, can be much improved
@@ -121,7 +121,7 @@ def array_format(array: np.ndarray):
                                 floatmode='fixed')
     substrings = str_array.split('\n')
     return f'''
-Transformation matrix:
+{header}
 ```
 {substrings[0]}  
 {substrings[1]}  
@@ -157,7 +157,7 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
 
     static_fig, static_im = get_base_figure(static, 'Static')
     static_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
-    overlay_image = static_fig.add_image(array=assure_size(moving, static.shape))
+    overlay_image = static_fig.add_image(array=assure_size(moving, static.shape), name='Overlay image')
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im = get_base_figure(moving, 'Moving')
     moving_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
@@ -178,14 +178,14 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
                                      align='end')
 
     dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
-    zero_fig, zero_im = get_base_figure(static*0, 'Difference')
-    zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
+    zero_fig = ap.figure()
     overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
+    zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
+    zero_fig.set_title('Difference')
     
     async def _clear(event):
         static_pointset.clear_data()
-        # static_fig.refresh_pane()
-        # moving_fig.refresh_pane()
+        pn.io.push_notebook(static_fig, moving_fig)
 
     clear_button.on_click(_clear)
 
@@ -221,16 +221,13 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
             
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
         overlay_image.update_raw_image(warped_moving, fix_clims=True)#change
-        if is_notebook():
-            static_fig.refresh_pane()
 
         overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)#change
-        if is_notebook():
-            zero_fig.refresh_pane()
+        pn.io.push_notebook(static_fig, zero_fig)
 
     static_toolbox = static_fig.get_toolbox(name=f'Static toolbox')
     moving_toolbox = moving_fig.get_toolbox(name=f'Moving toolbox')
-    zero_toolbox = zero_fig.get_toolbox(name=f'Zero toolbox')
+    zero_toolbox = zero_fig.get_toolbox(name=f'Difference toolbox')
 
     run_button.on_click(_compute_transform)    
 
@@ -239,14 +236,11 @@ def point_registration(static: np.ndarray, moving: np.ndarray, initial_points: O
     layout.panes[0].append(pn.Row(static_toolbox))
     layout.panes[0].append(pn.Row(method_select, alpha_slider))
     layout.panes[0].append(pn.Row(run_button, clear_button))
+    layout.panes[0].append(output_md)
 
     layout.panes[1].append(moving_fig)
-    layout.panes[1].append(moving_toolbox)
-    layout.panes[1].append(output_md)
-
-    layout.panes[2].append(zero_fig)
-    layout.panes[2].append(zero_toolbox)
-    
+    layout.panes[1].append(pn.Row(moving_toolbox, zero_toolbox))
+    layout.panes[1].append(zero_fig)
     layout.finalize()
     
     def getter():
@@ -271,32 +265,26 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
         transformer_moving.add_null_transform(output_shape=static.shape)
 
     static_name = 'Static'
-    moving_name = 'Difference'
+    moving_name = 'Moving'
 
     fig = BokehFigure()
-    static_im = fig.add_image(array=static)
-    #moving_im = fig.add_image(array=transformer_moving.get_transformed_image(cval=np.nan))
-    #this is my change
-    diff = static - transformer_moving.get_transformed_image(cval=np.nan)
-    moving_im = fig.add_image(array=diff)
+    static_im = fig.add_image(array=static,
+                              name=static_name)
+    moving_im = fig.add_image(array=transformer_moving.get_transformed_image(cval=np.nan),
+                              name=moving_name)
     fig.scale_to_frame_size(frame_width=IMG_WIDTH)
 
     static_im.change_cmap('Blues')
     static_im.set_nan_transparent()
-    moving_im.set_color_mapper(palette='Spectrum')
+    moving_im.set_color_mapper(palette='Reds')
     moving_im.set_nan_transparent()
     static_im.add_colorbar(title=static_name)
     moving_im.add_colorbar(title=moving_name)
 
-    static_alpha = static_im.get_alpha_slider(name=f'{static_name} alpha', alpha=0.0)
-    static_cmap = static_im.get_cbar_select(title=f'{static_name} colormap')
-    static_clims = static_im.get_cbar_slider(title=f'{static_name} contrast')
-    static_invert = static_im.get_invert_cmap_box(name='Invert')
-
-    overlay_alpha = moving_im.get_alpha_slider(name=f'{moving_name} alpha', alpha=1)        
-    overlay_cmap = moving_im.get_cbar_select(title=f'{moving_name} colormap')
-    overlay_clims = moving_im.get_cbar_slider(title=f'{moving_name} contrast')
-    overlay_invert = moving_im.get_invert_cmap_box(name='Invert')
+    overlay_alpha = moving_im.get_alpha_slider(name=f'{moving_name} alpha',
+                                               alpha=0.5,
+                                               max_width=200)
+    toolbox = fig.get_toolbox(name='Image tools')
 
     translate_step_input = pn.widgets.FloatInput(name='Translate step (px):',
                                                  value=1.,
@@ -305,9 +293,8 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                                  width=125)
     
     def update_moving_sync():
-        moving_im.update_raw_image(static - transformer_moving.get_transformed_image(), fix_clims=True)
-        if is_notebook():
-            fig.refresh_pane()
+        moving_im.update_raw_image(transformer_moving.get_transformed_image(), fix_clims=True)
+        pn.io.push_notebook(fig)
     
     async def update_moving():
         update_moving_sync()
@@ -323,7 +310,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     origin_cursor = fig.add_cursor(image=static_im,
                                    line_color='cyan',
                                    line_alpha=0.)
-    fig.set_active_tool(origin_cursor.tool_label())
+
     about_center_cbox = pn.widgets.Checkbox(name='Center-origin',
                                             value=True,
                                             width=125)
@@ -334,7 +321,7 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
     about_center_cbox.param.watch(_set_cursor_alpha, 'value')
 
     rotate_step_input = pn.widgets.FloatInput(name='Rotate step (deg):',
-                                              value=5.,
+                                              value=1.,
                                               start=0.1,
                                               end=100.,
                                               width=125)
@@ -393,16 +380,14 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                     max_width=125,
                                     button_type='primary')
     undo_button.on_click(_undo)
-    save_checkbox = pn.widgets.Checkbox(name='Save matrix')
 
     def getter():
         return {
             'transform': transformer_moving.get_combined_transform(),
-            'save': save_checkbox.value
             }
 
     
-    return pn.Column(pn.Row(static_alpha, overlay_alpha),
+    return pn.Column(overlay_alpha,
                      pn.Row(fig, pn.Column(translate_step_input,
                                            translate_buttons(fine_translate),
                                            about_center_cbox,
@@ -411,11 +396,8 @@ def fine_adjust(static: np.ndarray, moving: np.ndarray,
                                            scale_step_input,
                                            scale_buttons(fine_scale),
                                            pn.Spacer(width=40, height=40),
-                                           undo_button,
-                                          )),
-                     pn.Row(static_cmap, static_clims, static_invert),
-                     pn.Row(overlay_cmap, overlay_clims, overlay_invert),
-                     pn.Row(save_checkbox)), getter
+                                           undo_button)),
+                    pn.Row(toolbox[0], toolbox[1])), getter
 
 
 # Unicode arrow codes used for defining UI buttons
