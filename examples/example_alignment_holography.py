@@ -6,30 +6,31 @@
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 from align_panel.imgsetlib import Imgset
+from align_panel.notebook_panels import align_cell
 
 # create instance of Imgset
-imgset1 = Imgset("test_data/holography.h5", '-4-H')
+imgset_move = Imgset("test_data/holography.h5", '-4-H')
+imgset_stat = Imgset("test_data/holography.h5", '+4-H')
 
 # load static image as reference and moving image to be aligned:
-img_stat = imgset1.get_data('unwrapped_phase', stat=True)
-img_move = imgset1.get_data('unwrapped_phase', stat=False)
+img_stat = imgset_move.get_data('unwrapped_phase', stat=True)
+img_move = imgset_move.get_data('unwrapped_phase', stat=False)
 
 # do autoalignment
 if True:
-    tmat = imgset1.autoalign(img_stat, img_move,'RIGID_BODY', 1000,del_back=True)
+    tmat = imgset_move.autoalign(img_stat, img_move,'RIGID_BODY', 62, del_back=True)
     print(">>> This is the tmat from autoalignment:"); print(tmat)
-
-# manual point alignmetn
-if False:
-    tmat = imgset1.manual_point(img_stat_manual, img_move_manual)
-
-# manual fine alignment, uses transformation matrix in memory for prealignment
-if True:
-    tmat = imgset1.manual_fine(img_stat, img_move, tmat)
 
 # save transformation matrix into the file
 if True:
-    imgset1.savedata(['tmat'],[tmat])
+    imgset_move.savedata(['tmat'],[tmat])
     print("tmat saved")
+
+# manual alignment
+if True:
+    GUI = align_cell(imgset_stat, imgset_move)
+    GUI.show()
+
+
 
 
