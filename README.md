@@ -53,6 +53,13 @@ Recomended logical sequence of examples depends on your usecase:
 3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
 4) example_imageset_explore_synchrotron  --> show results and data
 
+## 3.1 Jupyter notebooks
+You can use also jupyter notebooks instead of examples above. They are available at:
+
+Examples are available at:
+<>
+
+
 
 # 4 h5 file
 All data are stored in hdf5 file (shortly h5 file). Those files have inner hierarchy. The whole experiment is stored in one h5 file, consisting of several imagesets. The following paragraphs shows what is inside.
