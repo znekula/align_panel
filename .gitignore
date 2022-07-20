@@ -146,7 +146,7 @@ test*
 t_*.py
 # folders
 testingplace.py
-notebooks/
+
 
 
 
