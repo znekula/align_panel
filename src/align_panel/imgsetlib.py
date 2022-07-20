@@ -86,7 +86,7 @@ class Imgset:
             return h5py.File(self.filename, 'r')[self.imgset_fullname][keys[0]].shape
 
     def get_2d_image_keys(self, alignable=True):
-        not_alignable = ['ref', 'img']
+        not_alignable = ['tmat']
         keys = []
         f=h5py.File(self.filename, 'r')
         group = f[self.imgset_fullname]
