@@ -41,22 +41,21 @@ Examples are available at:
 <https://github.com/znekula/align_panel/tree/master/examples>
 
 Recomended logical sequence of examples depends on your usecase:
-## Electron holography
+## 3.1 Electron holography
 1) example_new_holography  --> load raw images, do phase reconstruction, save them into a new hdf5 file
 2) example_alignment_holography  --> align images automatically and manually
 3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
 4) example_imageset_explore_holography  --> show results and data
 
-## Synchrotron
+## 3.2 Synchrotron
 1) example_new_synchrotron  --> load raw images and save them into a new hdf5 file
 2) example_alignment_synchrotron  --> align images automatically and manually
 3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
 4) example_imageset_explore_synchrotron  --> show results and data
 
-## 3.1 Jupyter notebooks
-You can use also jupyter notebooks instead of examples above. They are available at:
+## 3.3 Jupyter notebooks
+You can also use jupyter notebooks instead of examples above. They are available at:
 
-Examples are available at:
 <>
 
 
