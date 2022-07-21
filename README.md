@@ -26,6 +26,11 @@ Second, install the align_panel library:
 pip install https://github.com/znekula/align_panel/releases/download/0.0.1/align_panel-0.0.1-py3-none-any.whl
 ```
 
+Third, install jupyter notebook:
+```bash
+conda install -c anaconda jupyter
+```
+
 # 2 Run application # under the development
 
 To run the app:
