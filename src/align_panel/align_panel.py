@@ -166,13 +166,21 @@ def point_registration(static: np.ndarray,
         - `moving_cx`, `moving_cy` for corresponding points in the moving image.
     """
     transformer_moving = ImageTransformer(moving)
+    transformer_moving.add_null_transform(output_shape=static.shape)
 
     static_fig, static_im = get_base_figure(static, 'Static')
+    static_im.add_colorbar(title='Static')
+    static_im.set_color_mapper('Blues')
     static_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     overlay_image = static_fig.add_image(array=assure_size(moving, static.shape),
                                          name='Overlay image')
+    overlay_image.add_colorbar(title='Overlay')
+    overlay_image.set_color_mapper('Reds')
+    overlay_image.set_nan_transparent()
     alpha_slider = overlay_image.get_alpha_slider(name='Overlay alpha', alpha=0., max_width=200)
     moving_fig, moving_im = get_base_figure(moving, 'Moving')
+    moving_im.add_colorbar(title='Moving')
+    moving_im.set_color_mapper('Reds')
     moving_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
     static_pointset, moving_pointset = get_joint_pointset(static_fig, moving_fig,
                                                           initial_points=initial_points)
@@ -190,12 +198,15 @@ def point_registration(static: np.ndarray,
     clear_button = pn.widgets.Button(name='Clear points',
                                      max_width=150,
                                      align='end')
+    show_diff_cbox = pn.widgets.Checkbox(name='Show image difference',
+                                         value=False,
+                                         align='end')
 
-    dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
-    zero_fig = ap.figure()
-    overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
-    zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
-    zero_fig.set_title('Difference')
+    # dif_im = static - transformer_moving.get_transformed_image(output_shape=static.shape)
+    # zero_fig = ap.figure()
+    # overlay_image_dif = zero_fig.add_image(array=assure_size(dif_im, static.shape))
+    # zero_fig.scale_to_frame_size(frame_width=IMG_WIDTH)
+    # zero_fig.set_title('Difference')
 
     async def _clear(event):
         static_pointset.clear_data()
@@ -205,7 +216,7 @@ def point_registration(static: np.ndarray,
 
     transform_points = None
 
-    async def _compute_transform(event):
+    def _compute_transform(event, fix_clims=True):
         nonlocal transform_points
 
         method = transformations[method_select.value]
@@ -237,27 +248,47 @@ def point_registration(static: np.ndarray,
             return
 
         warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
-        overlay_image.update_raw_image(warped_moving, fix_clims=True)
 
-        overlay_image_dif.update_raw_image(static - warped_moving, fix_clims=True)
-        pn.io.push_notebook(static_fig, zero_fig)
+        if show_diff_cbox.value:
+            overlay_image.update_raw_image(static - warped_moving, fix_clims=fix_clims)
+        else:
+            overlay_image.update_raw_image(warped_moving, fix_clims=fix_clims)
+        pn.io.push_notebook(static_fig)
 
     static_toolbox = static_fig.get_toolbox(name='Static toolbox')
-    moving_toolbox = moving_fig.get_toolbox(name='Moving toolbox')
-    zero_toolbox = zero_fig.get_toolbox(name='Difference toolbox')
+    moving_toolbox = moving_fig.get_toolbox(name='Moving image')
 
-    run_button.on_click(_compute_transform)
+    async def _compute_transform_a(event):
+        _compute_transform(event)
+
+    run_button.on_click(_compute_transform_a)
+
+    _prior_alpha = 0.
+
+    async def _switch_diff_img(event):
+        nonlocal _prior_alpha
+        warped_moving = transformer_moving.get_transformed_image(output_shape=static.shape)
+        if event.new:
+            _prior_alpha = alpha_slider.value
+            alpha_slider.value = 1.
+            new_img = static - warped_moving
+        else:
+            alpha_slider.value = _prior_alpha
+            new_img = warped_moving
+        overlay_image.update_raw_image(new_img, fix_clims=False)
+        pn.io.push_notebook(static_fig)
+
+    show_diff_cbox.param.watch(_switch_diff_img, 'value')
 
     layout = SimplePanes()
     layout.panes[0].append(static_fig)
-    layout.panes[0].append(pn.Row(static_toolbox))
+    layout.panes[0].append(pn.Row(static_toolbox[0], static_toolbox[1]))
     layout.panes[0].append(pn.Row(method_select, alpha_slider))
-    layout.panes[0].append(pn.Row(run_button, clear_button))
-    layout.panes[0].append(output_md)
+    layout.panes[0].append(pn.Row(run_button, clear_button, show_diff_cbox))
 
     layout.panes[1].append(moving_fig)
-    layout.panes[1].append(pn.Row(moving_toolbox, zero_toolbox))
-    layout.panes[1].append(zero_fig)
+    layout.panes[1].append(moving_toolbox)
+    layout.panes[1].append(output_md)
     layout.finalize()
 
     def getter():
