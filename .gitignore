@@ -142,8 +142,8 @@ autocorr_udf/
 *.h5
 test_data/
 test*
-*.ipynb
 t_*.py
+t_*.*
 # folders
 testingplace.py
 

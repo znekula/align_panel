@@ -25,15 +25,15 @@ imgset_new1.save(filename,'minus', imgset_ref=False)
 # (f) datafile.h5
 # |—— (g) ref_imageset_name
 # |     |—— (d) img
-# |     |—— (d) img_matadata
+# |     |—— (d) img_metadata
 # |
 # |—— (g) ord_imageset_name1
 # |     |—— (d) img
-# |     |—— (d) img_matadata
+# |     |—— (d) img_metadata
 # |     |—— (d) tmat              ...transformation matrix created by imgsetlib by alignment to the ref_imageset
 # |
 # |—— (g) ord_imageset_name2
 # |     |—— (d) img
-# |     |—— (d) img_matadata
+# |     |—— (d) img_metadata
 # |     |—— (d) tmat        
 
