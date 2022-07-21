@@ -244,7 +244,7 @@ def align_cell(static_imgset, moving_imgset):
                                  max_width=150,
                                  button_type='primary',
                                  align='end')
-    save_btn = pn.widgets.Button(name='Save transformation',
+    save_btn = pn.widgets.Button(name='Save to HDF5',
                                  max_width=150,
                                  button_type='success',
                                  align='end')
