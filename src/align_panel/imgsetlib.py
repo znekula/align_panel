@@ -40,6 +40,16 @@ class H5file:
                 self.rest.append(group)
 
     def addtext(self, textfile:str):
+        """add text notes into h5 file
+        if textnotes allready exists, it will be replaced
+
+        Parameters
+        ----------
+        textfile : str
+            datapath to the text file. 
+            This is the source of the textnotes, 
+            hich will be then saved into h5 file
+        """
         # read textfile with text notes
         textfile = open(textfile, "r")
         try:
@@ -59,12 +69,20 @@ class H5file:
 
 
     def readtext (self):
+        """reads textnotes from h5 file
+
+        Returns
+        -------
+        str
+            textnotes
+        """
         if 'textnotes' in self.rest:
             f = h5py.File(self.filename, 'r')
             try:
                 self.text = str(np.asarray(f['textnotes']))[2:-1]
             finally:
                 f.close()
+            return self.text
 
         
 
