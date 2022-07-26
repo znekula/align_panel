@@ -72,6 +72,7 @@ In electron holography, one allways makes imageges which are paired with their r
 
 
 (f) datafile.h5  
+|—— (d) textnotes
 |—— (g) ref_imageset_name  
 |     |—— (d) img  
 |     |—— (d) ref  
@@ -111,6 +112,7 @@ In electron holography, one allways makes imageges which are paired with their r
 All images from one experiment are stored in one h5 file. Each image is in its own imageset which contain: image, original metadata, metadata and transformation matrix.
 
  (f) datafile.h5  
+ |—— (d) textnotes
  |—— (g) ref_imageset_name  
  |     |—— (d) img  
  |     |—— (d) img_metadata  
