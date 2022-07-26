@@ -60,10 +60,7 @@ Recomended logical sequence of examples depends on your usecase:
 
 ## 3.3 Jupyter notebooks
 You can also use jupyter notebooks instead of examples above. They are available at:
-
-<>
-
-
+<https://github.com/znekula/align_panel/tree/master/notebooks>
 
 # 4 h5 file
 All data are stored in hdf5 file (shortly h5 file). Those files have inner hierarchy. The whole experiment is stored in one h5 file, consisting of several imagesets. The following paragraphs shows what is inside.
