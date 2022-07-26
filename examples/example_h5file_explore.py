@@ -7,6 +7,10 @@ from align_panel.imgsetlib import H5file
 myfilename = 'test_data/holography.h5'
 mydatafile = H5file(myfilename)
 
+# add notes
+mydatafile.addtext('test_data/notes.txt')
+mydatafile.readtext()
+
 
 
 
@@ -20,6 +24,9 @@ print ("\nHere are the full names of imagesets:")
 print ("reference imageset full name: " + str(mydatafile.ref_imageset_fullname))
 print ("imagesets full names: " + str(mydatafile.imageset_fullnames) + '\n')
 
+print ("text: \n")
+txt_replace =  mydatafile.text.replace("\\n","\n")
+print(txt_replace)
 
 
 
@@ -27,6 +34,7 @@ print ("imagesets full names: " + str(mydatafile.imageset_fullnames) + '\n')
 # Inner structure of h5 datafile:
 # 
 # (f) datafile.h5
+# |—— (d) textnotes
 # |—— (g) ref_imageset_name
 # |     |—— (d) img
 # |     |—— (d) ref

@@ -18,6 +18,7 @@ class H5file:
         filename : str
             data path to the h5 file
         """
+        self.filename = filename
         f = h5py.File(filename, 'r')
         groups = list(f.keys())
         f.close()
@@ -37,6 +38,37 @@ class H5file:
                 self.imageset_fullnames.append(group)
             else:
                 self.rest.append(group)
+
+    def addtext(self, textfile:str):
+        # read textfile with text notes
+        textfile = open(textfile, "r")
+        try:
+            text = textfile.read()
+        finally:
+            textfile.close()
+        # add text to h5 file
+        f = h5py.File(self.filename, 'a')
+        try:
+            if 'textnotes' in self.rest:
+                del f['textnotes']
+            f.create_dataset('textnotes', data=text)
+            if 'textnotes' not in self.rest:
+                self.rest.append('textnotes')
+        finally:
+            f.close()
+
+
+    def readtext (self):
+        if 'textnotes' in self.rest:
+            f = h5py.File(self.filename, 'r')
+            try:
+                self.text = str(np.asarray(f['textnotes']))[2:-1]
+            finally:
+                f.close()
+
+        
+
+
 
 
 class Imgset:

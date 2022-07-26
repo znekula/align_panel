@@ -18,10 +18,10 @@ img_move = imgset_move.get_data('unwrapped_phase', stat=False)
 
 # do autoalignment
 if True:
-    tmat = imgset_move.autoalign(img_stat, img_move,'RIGID_BODY', 62, del_back=True)
+    tmat = imgset_move.autoalign(img_stat, img_move,'RIGID_BODY', bins = 62, del_back=True)
     print(">>> This is the tmat from autoalignment:"); print(tmat)
 
-# save transformation matrix into the file
+# save transformation matrix from autoalignment
 if True:
     imgset_move.savedata(['tmat'],[tmat])
     print("tmat saved")
