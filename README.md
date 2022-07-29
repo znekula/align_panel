@@ -31,43 +31,37 @@ Third, install jupyter notebook:
 conda install -c anaconda jupyter
 ```
 
-# 2 Run application # under the development
 
-To run the app:
-```bash
-align_panel
-```
-
-within the environment into which the package was installed.
-
-# 3 Examples
+# 2 Examples
 
 Examples are available at:
 <https://github.com/znekula/align_panel/tree/master/examples>
 
 Recomended logical sequence of examples depends on your usecase:
-## 3.1 Electron holography
+## 2.1 Electron holography
 1) example_new_holography  --> load raw images, do phase reconstruction, save them into a new hdf5 file
 2) example_alignment_holography  --> align images automatically and manually
 3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
 4) example_imageset_explore_holography  --> show results and data
 
-## 3.2 Synchrotron
+## 2.2 Synchrotron
 1) example_new_synchrotron  --> load raw images and save them into a new hdf5 file
 2) example_alignment_synchrotron  --> align images automatically and manually
 3) example_h5file_explore  --> show what is inside of the newly created hdf5 file
 4) example_imageset_explore_synchrotron  --> show results and data
 
-## 3.3 Jupyter notebooks
+## 2.3 Jupyter notebooks
+Alingn notebook
+
 You can also use jupyter notebooks instead of examples above. They are available at:
 <https://github.com/znekula/align_panel/tree/master/notebooks>
 
-# 4 h5 file
+# 3 h5 file
 All data are stored in hdf5 file (shortly h5 file). Those files have inner hierarchy. The whole experiment is stored in one h5 file, consisting of several imagesets. The following paragraphs shows what is inside.
 
 
 
-## 4.1 Electron holography
+## 3.1 Electron holography
 In electron holography, one allways makes imageges which are paired with their reference images. Each images and its ref. image are used for creating one imageset. Each h5 file contains as many imagesets as many images one made in the experiment. 
 
 
@@ -108,7 +102,7 @@ In electron holography, one allways makes imageges which are paired with their r
 |     |—— (d) unwrapped_phase  
 |     |—— (d) tmat   
   
-## 4.2 Synchrotron
+## 3.2 Synchrotron
 All images from one experiment are stored in one h5 file. Each image is in its own imageset which contain: image, original metadata, metadata and transformation matrix.
 
  (f) datafile.h5  
